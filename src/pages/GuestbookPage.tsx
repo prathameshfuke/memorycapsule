@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useGuest } from '../hooks/useGuest';
 import { useBirthdayLock } from '../hooks/useBirthdayLock';
+import { isCapsuleUnlocked } from '../lib/constants';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { GuestbookEntry } from '../types/database';
 import PageWrapper from '../components/layout/PageWrapper';
@@ -15,14 +16,26 @@ export default function GuestbookPage() {
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const fetchEntries = useCallback(async () => {
-    if (isSupabaseConfigured() && !isLocked) {
-      const { data } = await supabase
-        .from('guestbook')
-        .select('*')
-        .order('created_at', { ascending: true });
-      if (data) setEntries(data as unknown as GuestbookEntry[]);
+    const mode = localStorage.getItem('mode');
+    const unlocked = isCapsuleUnlocked();
+
+    // Query gate: if not admin and locked, DO NOT query
+    if (mode !== 'admin' && !unlocked) {
+      return;
     }
-  }, [isLocked]);
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data } = await supabase
+          .from('guestbook')
+          .select('*')
+          .order('created_at', { ascending: true });
+        if (data) setEntries(data as unknown as GuestbookEntry[]);
+      } catch (err) {
+        console.error('Failed to fetch guestbook:', err);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetchEntries();
@@ -40,12 +53,14 @@ export default function GuestbookPage() {
     setIsSubmitting(true);
     try {
       if (isSupabaseConfigured()) {
-        await supabase.from('guestbook').insert([{
+        const { error } = await supabase.from('guestbook').insert([{
           guest_name: guestName,
           message: message.trim(),
         }]);
+        if (error) throw error;
         fetchEntries();
       } else {
+        // Local fallback
         setEntries(prev => [...prev, {
           id: crypto.randomUUID(),
           guest_name: guestName || 'Anonymous',
@@ -56,28 +71,33 @@ export default function GuestbookPage() {
       setMessage('');
       setHasSubmitted(true);
     } catch (err) {
-      console.error('Error:', err);
+      console.error('Error signing guestbook:', err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <PageWrapper>
-      <div className="px-6 pt-16 pb-8 max-w-lg mx-auto">
+    <PageWrapper className="bg-[#FAF7F2]">
+      <div className="film-grain pointer-events-none fixed inset-0 z-40" />
+
+      <div className="px-6 pt-20 pb-8 max-w-[860px] mx-auto">
+        {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="text-center space-y-2 mb-8"
         >
+          <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
+            Registry
+          </span>
           <h1
-            className="text-3xl md:text-4xl mb-2"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
+            className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]"
           >
-            📖 Guest Book
+            guestbook
           </h1>
-          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            Leave your mark. Sign the book.
+          <p className="text-sm text-[var(--color-dust)]">
+            Leave your signature on the registry.
           </p>
         </motion.div>
 
@@ -86,100 +106,88 @@ export default function GuestbookPage() {
           <motion.form
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.1 }}
             onSubmit={handleSubmit}
-            className="mb-10 space-y-4"
+            className="mb-12 space-y-4"
           >
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Write something memorable..."
+              placeholder="Write a public note..."
               rows={4}
-              className="w-full px-5 py-4 rounded-2xl text-sm outline-none resize-none leading-relaxed"
+              className="w-full px-5 py-4 rounded-[4px] text-sm outline-none resize-none leading-relaxed caret-[var(--color-blush)]"
               style={{
                 background: 'var(--color-cream)',
-                color: 'var(--color-text)',
-                border: '1px solid rgba(93, 64, 55, 0.08)',
+                color: 'var(--color-ink)',
+                border: '1px solid var(--color-dust)',
                 fontFamily: message ? 'var(--font-handwritten)' : 'var(--font-body)',
-                fontSize: message ? '1.05rem' : '0.875rem',
+                fontStyle: message ? 'italic' : 'normal',
+                fontSize: message ? '1.1rem' : '0.875rem',
               }}
             />
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            <button
               type="submit"
               disabled={!message.trim() || isSubmitting}
-              className="w-full py-3.5 rounded-xl text-sm font-medium cursor-pointer disabled:opacity-50"
-              style={{
-                background: 'var(--color-brown)',
-                color: 'var(--color-cream)',
-              }}
+              className="w-full py-3.5 bg-[var(--color-ink)] text-[var(--color-cream)] rounded-[4px] text-xs uppercase tracking-[0.2em] font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-ink)]/90 transition-colors"
             >
-              {isSubmitting ? 'Signing...' : 'Sign the Book ✍️'}
-            </motion.button>
+              {isSubmitting ? 'signing registry...' : 'sign the guestbook'}
+            </button>
           </motion.form>
         ) : (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-12 mb-10 rounded-2xl"
-            style={{
-              background: 'var(--color-cream)',
-              border: '1px solid rgba(93, 64, 55, 0.08)',
-            }}
+            className="text-center py-12 mb-12 rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)] flex flex-col items-center justify-center space-y-3"
           >
-            <span className="text-3xl block mb-2">✨</span>
-            <h3 className="text-lg font-medium mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}>
-              Added to Birthday Capsule
+            <h3 className="text-2xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]">
+              signature recorded
             </h3>
-            <p className="text-xs max-w-xs mx-auto mb-4" style={{ color: 'var(--color-text-muted)' }}>
-              Your contribution has been safely stored and will be revealed on July 5.
+            <p className="text-sm text-[var(--color-dust)] max-w-xs">
+              Thank you for signing the guestbook.
             </p>
             <button
               onClick={() => setHasSubmitted(false)}
-              className="text-xs underline cursor-pointer"
-              style={{ color: 'var(--color-text-muted)' }}
+              className="text-xs uppercase tracking-[0.2em] underline text-[var(--color-dust)] hover:text-[var(--color-ink)] cursor-pointer mt-4"
             >
-              Sign again
+              sign again
             </button>
           </motion.div>
         )}
 
         {/* Entries (Only visible after unlock) */}
-        {!isLocked && (
+        {!isLocked && entries.length > 0 && (
           <div className="space-y-4">
-            {entries.map((entry, i) => (
-              <motion.div
-                key={entry.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="p-5 rounded-2xl"
-                style={{
-                  background: 'var(--color-cream)',
-                  border: '1px solid rgba(93, 64, 55, 0.04)',
-                  transform: `rotate(${-0.5 + Math.random()}deg)`,
-                }}
-              >
-                <p
-                  className="text-base leading-relaxed"
-                  style={{ fontFamily: 'var(--font-handwritten)', color: 'var(--color-brown)' }}
+            <h2 className="text-xs uppercase tracking-[0.2em] font-semibold text-[var(--color-dust)] text-center mb-6">
+              Guest Signatures
+            </h2>
+            <div className="space-y-4">
+              {entries.map((entry, i) => (
+                <motion.div
+                  key={entry.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="p-5 rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)]"
+                  style={{
+                    transform: `rotate(${-0.5 + (i * 0.3) % 1}deg)`,
+                  }}
                 >
-                  "{entry.message}"
-                </p>
-                <div className="flex items-center justify-between mt-3">
                   <p
-                    className="text-lg"
-                    style={{ fontFamily: 'var(--font-handwritten)', color: 'var(--color-accent-dark)' }}
+                    className="text-base leading-relaxed text-[var(--color-ink)] font-light italic font-[family-name:var(--font-display)]"
                   >
-                    — {entry.guest_name || 'Anonymous'}
+                    "{entry.message}"
                   </p>
-                  <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
-                    {new Date(entry.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+                  <div className="flex items-center justify-between mt-4 text-[var(--color-dust)] border-t border-[var(--color-dust)]/10 pt-3 text-[10px] uppercase tracking-[0.1em]">
+                    <span>
+                      — {entry.guest_name || 'Anonymous'}
+                    </span>
+                    <span className="tabular-nums">
+                      {new Date(entry.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         )}
       </div>

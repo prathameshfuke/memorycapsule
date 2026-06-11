@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { useGuest } from '../hooks/useGuest';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Message, OneWord, Photo, GuestbookEntry } from '../types/database';
 import PageWrapper from '../components/layout/PageWrapper';
@@ -9,8 +8,7 @@ import { useNavigate } from 'react-router-dom';
 export default function AdminPage() {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   // Moderation state
   const [messages, setMessages] = useState<Message[]>([]);
@@ -19,25 +17,16 @@ export default function AdminPage() {
   const [guestbook, setGuestbook] = useState<GuestbookEntry[]>([]);
   const [activeTab, setActiveTab] = useState<'messages' | 'words' | 'photos' | 'guestbook'>('messages');
 
-  const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
-
   useEffect(() => {
-    const isAuthed = sessionStorage.getItem('admin_authorized');
-    if (isAuthed === 'true') {
+    const mode = localStorage.getItem('mode');
+    if (mode === 'admin') {
       setIsAdmin(true);
-    }
-  }, []);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === adminPassword) {
-      sessionStorage.setItem('admin_authorized', 'true');
-      setIsAdmin(true);
-      setError('');
     } else {
-      setError('Incorrect password!');
+      // If not admin, redirect to landing page
+      navigate('/');
     }
-  };
+    setCheckingAuth(false);
+  }, [navigate]);
 
   const fetchAll = useCallback(async () => {
     if (!isSupabaseConfigured()) return;
@@ -77,93 +66,68 @@ export default function AdminPage() {
     }
   };
 
-  if (!isAdmin) {
+  const handleLogout = () => {
+    localStorage.removeItem('event_code_verified');
+    localStorage.removeItem('mode');
+    localStorage.removeItem('guest_name');
+    localStorage.removeItem('guest_relationship');
+    localStorage.removeItem('guest_authorized');
+    window.location.href = '/';
+  };
+
+  if (checkingAuth) {
     return (
-      <PageWrapper>
-        <div className="min-h-[80vh] flex items-center justify-center px-6">
-          <div className="w-full max-w-sm text-center space-y-6">
-            <span className="text-5xl">🔐</span>
-            <h1
-              className="text-2xl font-light"
-              style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
-            >
-              Admin Moderation
-            </h1>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter Admin Password"
-                className="w-full px-4 py-3 rounded-xl text-center text-sm outline-none"
-                style={{
-                  background: 'var(--color-cream)',
-                  color: 'var(--color-text)',
-                  border: '1px solid rgba(93, 64, 55, 0.08)',
-                }}
-              />
-              {error && <p className="text-xs text-red-500">{error}</p>}
-              <button
-                type="submit"
-                className="w-full py-3 rounded-xl text-xs font-semibold uppercase tracking-wider cursor-pointer"
-                style={{
-                  background: 'var(--color-brown)',
-                  color: 'var(--color-cream)',
-                }}
-              >
-                Access Dashboard
-              </button>
-            </form>
-          </div>
-        </div>
-      </PageWrapper>
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF7F2]">
+        <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--color-blush)' }} />
+      </div>
     );
   }
 
-  return (
-    <PageWrapper>
-      <div className="film-grain pointer-events-none fixed inset-0 z-40 opacity-[0.03]" />
+  if (!isAdmin) {
+    return null; // Will redirect in useEffect
+  }
 
-      <div className="px-6 pt-20 pb-12 max-w-xl mx-auto space-y-8">
+  return (
+    <PageWrapper className="bg-[#FAF7F2]">
+      <div className="film-grain pointer-events-none fixed inset-0 z-40" />
+
+      <div className="px-6 pt-20 pb-12 max-w-[860px] mx-auto space-y-8">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-end border-b border-[var(--color-dust)]/10 pb-4">
           <div>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-dust)]">
+              Console
+            </span>
             <h1
-              className="text-2xl font-light"
-              style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
+              className="text-3xl md:text-4xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]"
             >
-              Moderation Desk
+              moderation desk
             </h1>
-            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              Manage all surprises and memory assets
-            </p>
           </div>
           <button
-            onClick={() => {
-              sessionStorage.removeItem('admin_authorized');
-              setIsAdmin(false);
-            }}
-            className="text-[10px] uppercase tracking-wider border border-red-200 text-red-500 px-3 py-1 rounded-md"
+            onClick={handleLogout}
+            className="text-[10px] uppercase tracking-wider border border-[var(--color-blush)] text-[var(--color-blush)] px-3 py-1.5 rounded-[4px] cursor-pointer hover:bg-[var(--color-cream)] transition-colors"
           >
-            Logout
+            Leave admin
           </button>
         </div>
 
         {/* Tab switchers */}
-        <div className="flex gap-2 border-b border-gray-100 pb-2 overflow-x-auto">
+        <div className="flex gap-2 pb-2 overflow-x-auto">
           {[
-            { id: 'messages', label: 'Notes 💌' },
-            { id: 'words', label: 'Words ✨' },
-            { id: 'photos', label: 'Gallery 📸' },
-            { id: 'guestbook', label: 'Registry 📝' },
+            { id: 'messages', label: 'notes' },
+            { id: 'words', label: 'words' },
+            { id: 'photos', label: 'gallery' },
+            { id: 'guestbook', label: 'registry' },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className="px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap"
+              className="px-4 py-2 rounded-[4px] text-xs uppercase tracking-[0.1em] font-medium cursor-pointer whitespace-nowrap transition-colors"
               style={{
-                background: activeTab === tab.id ? 'var(--color-brown)' : 'transparent',
-                color: activeTab === tab.id ? 'var(--color-cream)' : 'var(--color-text-muted)',
+                background: activeTab === tab.id ? 'var(--color-ink)' : 'var(--color-cream)',
+                color: activeTab === tab.id ? 'var(--color-cream)' : 'var(--color-dust)',
+                border: `1px solid ${activeTab === tab.id ? 'var(--color-ink)' : 'var(--color-dust)'}`,
               }}
             >
               {tab.label}
@@ -172,52 +136,52 @@ export default function AdminPage() {
         </div>
 
         {/* Content list */}
-        <div className="space-y-3 min-h-[350px]">
+        <div className="space-y-4 min-h-[350px]">
           {activeTab === 'messages' && (
             <div className="space-y-3">
               {messages.map((msg) => (
-                <div key={msg.id} className="p-4 bg-white rounded-xl shadow-sm border border-gray-50 flex justify-between gap-4">
+                <div key={msg.id} className="p-4 bg-[var(--color-cream)] rounded-[4px] border border-[var(--color-dust)]/20 flex justify-between gap-4 items-start">
                   <div className="space-y-1">
-                    <p className="text-sm font-medium" style={{ color: 'var(--color-brown)' }}>"{msg.message}"</p>
-                    <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>— {msg.guest_name}</p>
+                    <p className="text-sm font-light text-[var(--color-ink)]">"{msg.message}"</p>
+                    <p className="text-[10px] uppercase tracking-wider text-[var(--color-dust)]">— {msg.guest_name}</p>
                   </div>
                   <button
                     onClick={() => handleDelete('messages', msg.id)}
-                    className="text-xs text-red-500 font-bold hover:underline"
+                    className="text-[10px] uppercase tracking-wider text-[var(--color-blush)] hover:underline cursor-pointer flex-shrink-0"
                   >
                     Delete
                   </button>
                 </div>
               ))}
-              {messages.length === 0 && <p className="text-center text-xs py-10" style={{ color: 'var(--color-text-muted)' }}>No messages found.</p>}
+              {messages.length === 0 && <p className="text-center text-xs py-12 text-[var(--color-dust)]">No messages found.</p>}
             </div>
           )}
 
           {activeTab === 'words' && (
             <div className="space-y-3">
               {words.map((word) => (
-                <div key={word.id} className="p-4 bg-white rounded-xl shadow-sm border border-gray-50 flex justify-between items-center">
-                  <div>
-                    <span className="text-sm font-bold bg-[var(--color-cream)] px-3 py-1.5 rounded-lg text-[var(--color-accent-dark)]">{word.word}</span>
-                    <span className="text-xs ml-3" style={{ color: 'var(--color-text-muted)' }}>by {word.guest_name}</span>
+                <div key={word.id} className="p-4 bg-[var(--color-cream)] rounded-[4px] border border-[var(--color-dust)]/20 flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-light border border-[var(--color-dust)]/40 px-3 py-1.5 rounded-[2px] text-[var(--color-sepia)] font-[family-name:var(--font-display)] bg-[#FAF7F2]">{word.word}</span>
+                    <span className="text-[10px] uppercase tracking-wider text-[var(--color-dust)]">by {word.guest_name}</span>
                   </div>
                   <button
                     onClick={() => handleDelete('one_word', word.id)}
-                    className="text-xs text-red-500 font-bold hover:underline"
+                    className="text-[10px] uppercase tracking-wider text-[var(--color-blush)] hover:underline cursor-pointer"
                   >
                     Delete
                   </button>
                 </div>
               ))}
-              {words.length === 0 && <p className="text-center text-xs py-10" style={{ color: 'var(--color-text-muted)' }}>No words found.</p>}
+              {words.length === 0 && <p className="text-center text-xs py-12 text-[var(--color-dust)]">No words found.</p>}
             </div>
           )}
 
           {activeTab === 'photos' && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               {photos.map((photo) => (
-                <div key={photo.id} className="p-3 bg-white rounded-xl shadow-sm border border-gray-50 space-y-2">
-                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                <div key={photo.id} className="p-3 bg-[var(--color-cream)] rounded-[4px] border border-[var(--color-dust)]/20 space-y-3">
+                  <div className="aspect-square rounded-[2px] overflow-hidden bg-black/5">
                     {photo.type === 'video' ? (
                       <video src={photo.photo_url} className="w-full h-full object-cover" controls />
                     ) : (
@@ -225,37 +189,37 @@ export default function AdminPage() {
                     )}
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-medium" style={{ color: 'var(--color-text-muted)' }}>{photo.guest_name} ({photo.type})</span>
+                    <span className="text-[9px] uppercase tracking-wider text-[var(--color-dust)]">{photo.guest_name} ({photo.type})</span>
                     <button
                       onClick={() => handleDelete('photos', photo.id)}
-                      className="text-xs text-red-500 font-bold hover:underline"
+                      className="text-[10px] uppercase tracking-wider text-[var(--color-blush)] hover:underline cursor-pointer"
                     >
                       Delete
                     </button>
                   </div>
                 </div>
               ))}
-              {photos.length === 0 && <p className="text-center text-xs py-10 col-span-2" style={{ color: 'var(--color-text-muted)' }}>No photos or videos found.</p>}
+              {photos.length === 0 && <p className="text-center text-xs py-12 text-[var(--color-dust)] col-span-2">No photos or videos found.</p>}
             </div>
           )}
 
           {activeTab === 'guestbook' && (
             <div className="space-y-3">
               {guestbook.map((entry) => (
-                <div key={entry.id} className="p-4 bg-white rounded-xl shadow-sm border border-gray-50 flex justify-between gap-4">
+                <div key={entry.id} className="p-4 bg-[var(--color-cream)] rounded-[4px] border border-[var(--color-dust)]/20 flex justify-between gap-4 items-start">
                   <div className="space-y-1">
-                    <p className="text-sm font-medium" style={{ color: 'var(--color-brown)' }}>"{entry.message}"</p>
-                    <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>— {entry.guest_name}</p>
+                    <p className="text-sm font-light text-[var(--color-ink)]">"{entry.message}"</p>
+                    <p className="text-[10px] uppercase tracking-wider text-[var(--color-dust)]">— {entry.guest_name}</p>
                   </div>
                   <button
                     onClick={() => handleDelete('guestbook', entry.id)}
-                    className="text-xs text-red-500 font-bold hover:underline"
+                    className="text-[10px] uppercase tracking-wider text-[var(--color-blush)] hover:underline cursor-pointer flex-shrink-0"
                   >
                     Delete
                   </button>
                 </div>
               ))}
-              {guestbook.length === 0 && <p className="text-center text-xs py-10" style={{ color: 'var(--color-text-muted)' }}>No guestbook entries found.</p>}
+              {guestbook.length === 0 && <p className="text-center text-xs py-12 text-[var(--color-dust)]">No guestbook entries found.</p>}
             </div>
           )}
         </div>

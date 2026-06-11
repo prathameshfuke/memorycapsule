@@ -1,35 +1,46 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGuest } from '../hooks/useGuest';
 import { useBirthdayLock } from '../hooks/useBirthdayLock';
+import { isCapsuleUnlocked } from '../lib/constants';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Message } from '../types/database';
 import PageWrapper from '../components/layout/PageWrapper';
-import Countdown from '../components/shared/Countdown';
-import Confetti from '../components/shared/Confetti';
 
 export default function MessagesPage() {
   const { guestName, isRegistered, setShowRegistration } = useGuest();
   const { isLocked } = useBirthdayLock();
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState('');
+  const [targetCapsule, setTargetCapsule] = useState<'this-year' | 'next-year'>('this-year');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const fetchMessages = useCallback(async () => {
+    const mode = localStorage.getItem('mode');
+    const unlocked = isCapsuleUnlocked();
+
+    // Query gate: if not admin and locked, DO NOT query
+    if (mode !== 'admin' && !unlocked) {
+      return;
+    }
+
     if (isSupabaseConfigured()) {
-      const { data } = await supabase
-        .from('messages')
-        .select('*')
-        .order('created_at', { ascending: true });
-      if (data) setMessages(data as unknown as Message[]);
+      try {
+        const { data } = await supabase
+          .from('messages')
+          .select('*')
+          .order('created_at', { ascending: true });
+        if (data) setMessages(data as unknown as Message[]);
+      } catch (err) {
+        console.error('Failed to fetch messages:', err);
+      }
     }
   }, []);
 
   useEffect(() => {
-    if (!isLocked) fetchMessages();
-  }, [isLocked, fetchMessages]);
+    fetchMessages();
+  }, [fetchMessages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,24 +53,27 @@ export default function MessagesPage() {
 
     setIsSubmitting(true);
     try {
+      const table = targetCapsule === 'this-year' ? 'messages' : 'future_letters';
       if (isSupabaseConfigured()) {
-        await supabase.from('messages').insert([{
+        const { error } = await supabase.from(table).insert([{
           guest_name: guestName,
           message: messageText.trim(),
         }]);
+        if (error) throw error;
       } else {
-        // Local-only fallback
-        setMessages(prev => [...prev, {
-          id: crypto.randomUUID(),
-          guest_name: guestName || 'Anonymous',
-          message: messageText.trim(),
-          created_at: new Date().toISOString(),
-        }]);
+        // Local fallback
+        if (table === 'messages') {
+          setMessages(prev => [...prev, {
+            id: crypto.randomUUID(),
+            guest_name: guestName || 'Anonymous',
+            message: messageText.trim(),
+            created_at: new Date().toISOString(),
+          }]);
+        }
       }
       setMessageText('');
-      setShowConfetti(true);
       setHasSubmitted(true);
-      setTimeout(() => setShowConfetti(false), 4000);
+      fetchMessages();
     } catch (err) {
       console.error('Error submitting message:', err);
     } finally {
@@ -71,181 +85,161 @@ export default function MessagesPage() {
   const isValidLength = charCount >= 10 && charCount <= 500;
 
   return (
-    <PageWrapper>
-      {showConfetti && <Confetti />}
+    <PageWrapper className="bg-[#FAF7F2]">
+      {/* Film grain */}
+      <div className="film-grain pointer-events-none fixed inset-0 z-40" />
 
-      <div className="px-6 pt-16 pb-8 max-w-lg mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8"
-        >
-          <h1
-            className="text-3xl md:text-4xl mb-2"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
+      <div className="px-6 pt-20 pb-8 max-w-[860px] mx-auto min-h-[100dvh] flex flex-col justify-between">
+        <div className="space-y-8 flex-1 flex flex-col">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center space-y-2"
           >
-            For Her.
-          </h1>
-          <p className="text-sm leading-relaxed mt-2" style={{ color: 'var(--color-text-muted)' }}>
-            Write something she'll read on her birthday morning.
-          </p>
-          <p className="text-sm leading-relaxed mt-1" style={{ color: 'var(--color-text-muted)' }}>
-            It can be a memory. A thank you. A joke.
-          </p>
-          <p className="text-sm leading-relaxed mt-1 italic" style={{ color: 'var(--color-brown-light)' }}>
-            Or something you've never said before.
-          </p>
-        </motion.div>
+            <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
+              Write a letter
+            </span>
+            <h1
+              className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]"
+            >
+              for her
+            </h1>
+          </motion.div>
 
-        {/* Input Form (always visible — guests can write even before unlock) */}
-        <AnimatePresence mode="wait">
-          {hasSubmitted ? (
-            <motion.div
-              key="thanks"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-12 rounded-2xl"
+          {/* Capsule Target Toggle - for this year vs next year */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="flex justify-center gap-6"
+          >
+            <button
+              onClick={() => setTargetCapsule('this-year')}
+              className="text-xs uppercase tracking-[0.2em] font-medium transition-colors cursor-pointer py-1.5 border-b-2"
               style={{
-                background: 'var(--color-cream)',
-                border: '1px solid rgba(93, 64, 55, 0.08)',
+                borderColor: targetCapsule === 'this-year' ? 'var(--color-blush)' : 'transparent',
+                color: targetCapsule === 'this-year' ? 'var(--color-ink)' : 'var(--color-dust)',
               }}
             >
-              <span className="text-4xl block mb-3">✨</span>
-              <h3 className="text-lg font-medium mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}>
-                Added to Birthday Capsule
-              </h3>
-              <p className="text-xs max-w-xs mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
-                Your contribution has been safely stored and will be revealed on July 5.
-              </p>
-              <button
-                onClick={() => setHasSubmitted(false)}
-                className="text-xs underline cursor-pointer"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
-                Write another message
-              </button>
-            </motion.div>
-          ) : (
-            <motion.form
-              key="form"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              onSubmit={handleSubmit}
-              className="space-y-4"
+              for this year
+            </button>
+            <button
+              onClick={() => setTargetCapsule('next-year')}
+              className="text-xs uppercase tracking-[0.2em] font-medium transition-colors cursor-pointer py-1.5 border-b-2"
+              style={{
+                borderColor: targetCapsule === 'next-year' ? 'var(--color-blush)' : 'transparent',
+                color: targetCapsule === 'next-year' ? 'var(--color-ink)' : 'var(--color-dust)',
+              }}
             >
-              <div className="relative">
-                <textarea
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  placeholder="What would you like her to remember forever?"
-                  maxLength={500}
-                  rows={6}
-                  className="w-full px-5 py-4 rounded-2xl text-sm outline-none resize-none leading-relaxed"
-                  style={{
-                    background: 'var(--color-cream)',
-                    color: 'var(--color-text)',
-                    border: '1px solid rgba(93, 64, 55, 0.08)',
-                    fontFamily: charCount > 0 ? 'var(--font-handwritten)' : 'var(--font-body)',
-                    fontSize: charCount > 0 ? '1.05rem' : '0.875rem',
-                  }}
-                />
-                <span
-                  className="absolute bottom-3 right-4 text-[10px] tabular-nums"
-                  style={{
-                    color: charCount > 500 ? 'var(--color-error)' : 'var(--color-text-muted)',
-                  }}
+              for next year
+            </button>
+          </motion.div>
+
+          {/* Blank Ruled Journal Page Editor */}
+          <div className="flex-1 flex flex-col pt-6">
+            <AnimatePresence mode="wait">
+              {hasSubmitted ? (
+                <motion.div
+                  key="thanks"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-center py-20 px-6 border border-[var(--color-dust)] rounded-[4px] bg-[var(--color-cream)] flex flex-col items-center justify-center space-y-4 flex-1"
                 >
-                  {charCount}/500
-                </span>
-              </div>
-
-              {charCount > 0 && charCount < 10 && (
-                <p className="text-[11px]" style={{ color: 'var(--color-accent-dark)' }}>
-                  Write at least 10 characters...
-                </p>
-              )}
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                disabled={!isValidLength || isSubmitting}
-                className="w-full py-3.5 rounded-xl text-sm font-medium tracking-wide cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: 'var(--color-brown)',
-                  color: 'var(--color-cream)',
-                  boxShadow: '0 4px 16px rgba(93, 64, 55, 0.15)',
-                }}
-              >
-                {isSubmitting ? 'Sending...' : 'Seal This Message 💌'}
-              </motion.button>
-            </motion.form>
-          )}
-        </AnimatePresence>
-
-        {/* Lock status / Messages display */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-12"
-        >
-          {isLocked ? (
-            <div className="text-center py-12">
-              <div className="keyhole-glow inline-block mb-4">
-                <span className="text-5xl">🔒</span>
-              </div>
-              <h3
-                className="text-lg mb-4"
-                style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
-              >
-                Messages are sealed
-              </h3>
-              <p className="text-xs mb-6" style={{ color: 'var(--color-text-muted)' }}>
-                Opens on her birthday morning
-              </p>
-              <Countdown />
-            </div>
-          ) : (
-            <div>
-              <h3
-                className="text-lg mb-6 text-center"
-                style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
-              >
-                Messages Revealed ✨
-              </h3>
-              <div className="space-y-4">
-                {messages.map((msg, i) => (
-                  <motion.div
-                    key={msg.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="p-5 rounded-2xl"
-                    style={{
-                      background: 'var(--color-cream)',
-                      border: '1px solid rgba(93, 64, 55, 0.06)',
-                      transform: `rotate(${-1 + Math.random() * 2}deg)`,
-                    }}
+                  <h3 className="text-2xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]">
+                    Added to capsule
+                  </h3>
+                  <p className="text-sm max-w-xs text-[var(--color-dust)]">
+                    Your letter has been sealed and will be revealed on July 5{targetCapsule === 'next-year' ? ', 2027' : ''}.
+                  </p>
+                  <button
+                    onClick={() => setHasSubmitted(false)}
+                    className="text-xs uppercase tracking-[0.2em] underline text-[var(--color-dust)] hover:text-[var(--color-ink)] cursor-pointer mt-4"
                   >
-                    <p
-                      className="text-base leading-relaxed"
-                      style={{ fontFamily: 'var(--font-handwritten)', color: 'var(--color-brown)' }}
+                    Write another note
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.form
+                  key="form"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onSubmit={handleSubmit}
+                  className="flex-1 flex flex-col justify-between"
+                >
+                  <div className="relative flex-1 bg-[var(--color-cream)] border border-[var(--color-dust)] rounded-[4px] p-6 flex flex-col">
+                    <textarea
+                      value={messageText}
+                      onChange={(e) => setMessageText(e.target.value)}
+                      placeholder={targetCapsule === 'this-year' ? "What would you like her to remember forever?" : "Write a letter to her future self (opens July 5, 2027)..."}
+                      maxLength={500}
+                      rows={10}
+                      className="w-full flex-1 bg-transparent outline-none resize-none leading-[28px] focus:ring-0 focus:border-none border-none caret-[var(--color-blush)]"
+                      style={{
+                        backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 96%, rgba(140, 123, 110, 0.15) 96%, rgba(140, 123, 110, 0.15) 100%)',
+                        backgroundSize: '100% 28px',
+                        lineHeight: '28px',
+                        border: 'none',
+                        boxShadow: 'none',
+                        fontFamily: 'var(--font-display)',
+                        fontSize: '1.4rem',
+                        color: 'var(--color-ink)',
+                      }}
+                      autoFocus
+                    />
+                    
+                    <div className="flex items-center justify-between mt-4 text-[var(--color-dust)] text-[10px] uppercase tracking-[0.1em] border-t border-[var(--color-dust)]/10 pt-3">
+                      <span>
+                        {charCount > 0 && charCount < 10 ? 'needs 10 characters' : ''}
+                      </span>
+                      <span className="tabular-nums">
+                        {charCount}/500
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Ruled submission link line */}
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={!isValidLength || isSubmitting}
+                      className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)] hover:text-[var(--color-ink)] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1 transition-colors"
                     >
-                      "{msg.message}"
-                    </p>
-                    <p className="text-xs mt-3 text-right" style={{ color: 'var(--color-text-muted)' }}>
-                      — {msg.guest_name || 'Anonymous'}
-                    </p>
-                  </motion.div>
-                ))}
-              </div>
+                      {isSubmitting ? 'sealing note...' : 'leave this note →'}
+                    </button>
+                  </div>
+                </motion.form>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Locked lists view (only visible after unlock) */}
+        {!isLocked && messages.length > 0 && (
+          <div className="mt-16 space-y-6">
+            <h2 className="text-xs uppercase tracking-[0.2em] font-semibold text-[var(--color-dust)] text-center">
+              Shared Letters
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {messages.map((msg, i) => (
+                <div
+                  key={msg.id}
+                  className="p-5 rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)]"
+                  style={{ transform: `rotate(${-1 + Math.random() * 2}deg)` }}
+                >
+                  <p className="text-base leading-relaxed text-[var(--color-ink)] font-light italic font-[family-name:var(--font-display)]">
+                    "{msg.message}"
+                  </p>
+                  <p className="text-xs mt-3 text-right text-[var(--color-dust)] uppercase tracking-[0.05em]">
+                    — {msg.guest_name || 'Anonymous'}
+                  </p>
+                </div>
+              ))}
             </div>
-          )}
-        </motion.div>
+          </div>
+        )}
       </div>
     </PageWrapper>
   );

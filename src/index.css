@@ -2,24 +2,29 @@
 
 /* ─── Design Tokens ─── */
 @theme {
-  --color-bg: #faf7f2;
-  --color-cream: #f4efe6;
-  --color-brown: #5d4037;
-  --color-brown-light: #7b5e50;
-  --color-text: #2e2e2e;
-  --color-text-muted: #6b6560;
-  --color-accent: #d4a373;
-  --color-accent-light: #e8c9a0;
-  --color-accent-dark: #b8864f;
-  --color-film-shadow: rgba(93, 64, 55, 0.08);
-  --color-white: #ffffff;
-  --color-lock-bg: #f0ebe3;
-  --color-success: #6b8f71;
-  --color-error: #c0392b;
+  --color-ink: #1A1614;
+  --color-parchment: #F5EFE4;
+  --color-blush: #C9897A;
+  --color-dust: #8C7B6E;
+  --color-sepia: #6B4F3A;
+  --color-cream: #FAF7F2;
 
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-handwritten: 'Caveat', cursive;
+  --color-bg: var(--color-parchment);
+  --color-text: var(--color-ink);
+  --color-text-muted: var(--color-dust);
+  --color-accent: var(--color-blush);
+  --color-accent-dark: var(--color-sepia);
+  --color-accent-light: var(--color-blush);
+  --color-brown: var(--color-ink);
+  --color-brown-light: var(--color-dust);
+  --color-white: var(--color-cream);
+  --color-lock-bg: var(--color-ink);
+  --color-success: var(--color-blush);
+  --color-error: var(--color-blush);
+
+  --font-display: 'Cormorant Garamond', serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-handwritten: 'Cormorant Garamond', serif;
 }
 
 /* ─── Base Styles ─── */
@@ -44,12 +49,25 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Enforce regular weight on all body text */
+body, p, span, input, textarea, button, select, option, label {
+  font-weight: 400 !important;
+}
+
 #root {
   min-height: 100dvh;
 }
 
 /* ─── Typography ─── */
-h1, h2, h3, h4, h5, h6 {
+h1 {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 8vw, 7rem);
+  color: var(--color-brown);
+  line-height: 1.1;
+  font-weight: 400;
+}
+
+h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   color: var(--color-brown);
   line-height: 1.2;
@@ -65,7 +83,7 @@ h1, h2, h3, h4, h5, h6 {
   height: 100%;
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.03;
+  opacity: 0.04;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 128px 128px;
@@ -79,11 +97,10 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ─── Polaroid Card ─── */
 .polaroid {
-  background: var(--color-white);
+  background: var(--color-cream);
   padding: 12px 12px 40px 12px;
-  box-shadow:
-    0 2px 8px var(--color-film-shadow),
-    0 8px 24px rgba(93, 64, 55, 0.06);
+  border: 1px solid var(--color-dust);
+  border-radius: 4px;
   position: relative;
 }
 
@@ -95,6 +112,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .polaroid-caption {
   font-family: var(--font-handwritten);
+  font-style: italic;
   font-size: 1.1rem;
   color: var(--color-brown);
   text-align: center;
@@ -109,7 +127,7 @@ h1, h2, h3, h4, h5, h6 {
   position: absolute;
   width: 80px;
   height: 24px;
-  background: rgba(212, 163, 115, 0.35);
+  background: rgba(201, 137, 122, 0.25);
   z-index: 2;
 }
 
@@ -130,7 +148,8 @@ h1, h2, h3, h4, h5, h6 {
 /* ─── Scrapbook Paper ─── */
 .scrapbook-paper {
   background: var(--color-cream);
-  border: 1px solid rgba(93, 64, 55, 0.08);
+  border: 1px solid var(--color-dust);
+  border-radius: 4px;
   position: relative;
 }
 
@@ -318,3 +337,30 @@ h1, h2, h3, h4, h5, h6 {
   animation: confettiFall var(--fall-duration, 3s) ease-in forwards;
   animation-delay: var(--fall-delay, 0s);
 }
+
+/* ─── Shake Error & Blur Breathe Animations ─── */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes blur-breathe {
+  0%, 100% { filter: blur(38px); }
+  50%       { filter: blur(42px); }
+}
+
+.animate-blur-breathe {
+  animation: blur-breathe 6s ease-in-out infinite;
+}
+
+/* ─── Custom Vignette ─── */
+.ink-vignette {
+  background: radial-gradient(circle, transparent 40%, rgba(26, 22, 20, 0.9) 100%);
+  pointer-events: none;
+}
+

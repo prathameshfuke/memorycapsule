@@ -7,72 +7,58 @@ export default function GuestDashboardPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Authenticate guest
-    const isAuth = localStorage.getItem('guest_authorized');
+    const isAuth = localStorage.getItem('event_code_verified');
     if (isAuth !== 'true') {
-      const pass = prompt('Enter Guest Access Code:');
-      if (pass === 'oneword') {
-        localStorage.setItem('guest_authorized', 'true');
-      } else {
-        alert('Access denied!');
-        navigate('/');
-      }
+      navigate('/');
     }
   }, [navigate]);
 
   const guestFeatures = [
-    { title: '💬 Describe her in one word', desc: 'Add a single descriptive word to her cloud.', route: '/one-word' },
-    { title: '💌 Leave a secret message', desc: 'Seal a message she will open on her birthday.', route: '/messages' },
-    { title: '📸 Add to the album', desc: 'Take or upload vintage photos and videos.', route: '/camera' },
-    { title: '📖 Sign the guestbook', desc: 'Sign the guest registry book with a public note.', route: '/guestbook' },
-    { title: '🧠 Play the quiz', desc: 'Test how well you know her in a trivia game.', route: '/quiz' },
+    { title: 'describe her in one word', desc: 'Add a single descriptive word to her cloud.', route: '/one-word' },
+    { title: 'leave a secret message', desc: 'Seal a message she will open on her birthday.', route: '/messages' },
+    { title: 'add to the album', desc: 'Take or upload vintage photos and videos.', route: '/camera' },
+    { title: 'sign the guestbook', desc: 'Sign the guest registry book with a public note.', route: '/guestbook' },
+    { title: 'play the quiz', desc: 'Test how well you know her in a trivia game.', route: '/quiz' },
   ];
 
   return (
-    <PageWrapper>
-      <div className="film-grain pointer-events-none fixed inset-0 z-40 opacity-[0.03]" />
+    <PageWrapper className="bg-[#FAF7F2]">
+      <div className="film-grain pointer-events-none fixed inset-0 z-40" />
 
-      <div className="px-6 pt-20 pb-12 max-w-lg mx-auto space-y-10">
+      <div className="px-6 pt-20 pb-12 max-w-[860px] mx-auto space-y-10">
         {/* Header */}
-        <div className="text-center space-y-3">
-          <span className="text-5xl block">✍️</span>
+        <div className="text-center space-y-2">
+          <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
+            your turn
+          </span>
           <h1
-            className="text-3xl md:text-4xl font-light"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
+            className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]"
           >
-            Ab Tumhari Baari
+            contribute
           </h1>
-          <p className="text-sm max-w-xs mx-auto" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="text-sm max-w-md mx-auto text-[var(--color-dust)]">
             Everyone here knows her differently. Leave a memory, a thought, or just one word.
           </p>
         </div>
 
         {/* Feature choices */}
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {guestFeatures.map((feat, idx) => (
-            <motion.button
+            <button
               key={idx}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
               onClick={() => navigate(feat.route)}
-              className="w-full text-left p-5 bg-white rounded-2xl flex items-center justify-between shadow-sm cursor-pointer group transition-all"
-              style={{
-                border: '1px solid rgba(93, 64, 55, 0.05)',
-              }}
+              className="w-full text-left p-6 bg-[var(--color-cream)] border border-[var(--color-dust)] rounded-[4px] flex items-center justify-between cursor-pointer group hover:bg-[var(--color-cream)]/80 transition-colors"
             >
-              <div className="space-y-1">
-                <h2 className="text-sm font-semibold group-hover:text-[var(--color-accent-dark)] transition-colors" style={{ color: 'var(--color-brown)' }}>
+              <div className="space-y-1 pr-4">
+                <h2 className="text-sm uppercase tracking-[0.1em] font-medium text-[var(--color-ink)] group-hover:text-[var(--color-blush)] transition-colors">
                   {feat.title}
                 </h2>
-                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                <p className="text-xs text-[var(--color-dust)] leading-relaxed font-[family-name:var(--font-body)]">
                   {feat.desc}
                 </p>
               </div>
-              <span className="text-lg text-[var(--color-accent)] group-hover:translate-x-1 transition-transform">→</span>
-            </motion.button>
+              <span className="text-lg text-[var(--color-dust)] group-hover:translate-x-1 group-hover:text-[var(--color-blush)] transition-transform">→</span>
+            </button>
           ))}
         </div>
 
@@ -80,12 +66,7 @@ export default function GuestDashboardPage() {
         <div className="text-center pt-4">
           <button
             onClick={() => navigate('/')}
-            className="px-6 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider cursor-pointer"
-            style={{
-              background: 'var(--color-cream)',
-              color: 'var(--color-brown)',
-              border: '1px solid rgba(93, 64, 55, 0.08)',
-            }}
+            className="px-6 py-2.5 rounded-[4px] text-xs font-semibold uppercase tracking-wider cursor-pointer border border-[var(--color-dust)] text-[var(--color-ink)] hover:bg-[var(--color-cream)] transition-colors"
           >
             ← Home
           </button>

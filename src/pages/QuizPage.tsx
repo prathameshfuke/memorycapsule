@@ -2,11 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGuest } from '../hooks/useGuest';
 import { useBirthdayLock } from '../hooks/useBirthdayLock';
+import { isCapsuleUnlocked } from '../lib/constants';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { QUIZ_QUESTIONS } from '../lib/constants';
 import type { QuizScore } from '../types/database';
 import PageWrapper from '../components/layout/PageWrapper';
-import Confetti from '../components/shared/Confetti';
 
 export default function QuizPage() {
   const { guestName, isRegistered, setShowRegistration } = useGuest();
@@ -15,20 +15,31 @@ export default function QuizPage() {
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState<number | null>(null);
   const [isFinished, setIsFinished] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
   const [leaderboard, setLeaderboard] = useState<QuizScore[]>([]);
   const [started, setStarted] = useState(false);
 
   const fetchLeaderboard = useCallback(async () => {
-    if (isSupabaseConfigured() && !isLocked) {
-      const { data } = await supabase
-        .from('quiz_scores')
-        .select('*')
-        .order('score', { ascending: false })
-        .limit(10);
-      if (data) setLeaderboard(data as QuizScore[]);
+    const mode = localStorage.getItem('mode');
+    const unlocked = isCapsuleUnlocked();
+
+    // Query gate: if not admin and locked, DO NOT query
+    if (mode !== 'admin' && !unlocked) {
+      return;
     }
-  }, [isLocked]);
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data } = await supabase
+          .from('quiz_scores')
+          .select('*')
+          .order('score', { ascending: false })
+          .limit(10);
+        if (data) setLeaderboard(data as QuizScore[]);
+      } catch (err) {
+        console.error('Failed to fetch leaderboard:', err);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -48,11 +59,7 @@ export default function QuizPage() {
       } else {
         setIsFinished(true);
         const finalScore = isCorrect ? score + 1 : score;
-        if (finalScore >= QUIZ_QUESTIONS.length * 0.7) {
-          setShowConfetti(true);
-          setTimeout(() => setShowConfetti(false), 4000);
-        }
-        // Save score
+        
         if (isRegistered) {
           if (isSupabaseConfigured()) {
             supabase.from('quiz_scores').insert([{
@@ -61,7 +68,7 @@ export default function QuizPage() {
               total: QUIZ_QUESTIONS.length,
             }]).then(() => fetchLeaderboard());
           } else {
-            // Local-only mode leaderboard append
+            // Local fallback
             setLeaderboard(prev => [...prev, {
               id: crypto.randomUUID(),
               guest_name: guestName || 'Anonymous',
@@ -86,67 +93,57 @@ export default function QuizPage() {
   const question = QUIZ_QUESTIONS[currentQ];
 
   return (
-    <PageWrapper>
-      {showConfetti && <Confetti />}
-
-      <div className="px-6 pt-16 pb-8 max-w-lg mx-auto">
+    <PageWrapper className="bg-[#FAF7F2]">
+      <div className="px-6 pt-20 pb-8 max-w-[860px] mx-auto">
         <AnimatePresence mode="wait">
           {!started ? (
             <motion.div
               key="start"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-center"
+              className="text-center space-y-6"
             >
-              <span className="text-5xl block mb-4">🧠</span>
-              <h1
-                className="text-3xl md:text-4xl mb-3"
-                style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
-              >
-                Who Knows Her Best?
-              </h1>
-              <p className="text-sm mb-8" style={{ color: 'var(--color-text-muted)' }}>
-                {QUIZ_QUESTIONS.length} questions. Let's see how well you really know her.
-              </p>
+              <div className="space-y-2">
+                <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
+                  Trivia activity
+                </span>
+                <h1
+                  className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]"
+                >
+                  who knows her best?
+                </h1>
+                <p className="text-sm text-[var(--color-dust)] max-w-sm mx-auto">
+                  {QUIZ_QUESTIONS.length} questions. Let's see how well you really know her.
+                </p>
+              </div>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 onClick={handleStart}
-                className="px-8 py-3.5 rounded-xl text-sm font-medium cursor-pointer"
-                style={{
-                  background: 'var(--color-brown)',
-                  color: 'var(--color-cream)',
-                  boxShadow: '0 4px 16px rgba(93, 64, 55, 0.15)',
-                }}
+                className="px-8 py-3.5 bg-[var(--color-ink)] text-[var(--color-cream)] rounded-[4px] text-xs uppercase tracking-[0.2em] font-medium cursor-pointer hover:bg-[var(--color-ink)]/90 transition-colors"
               >
-                Start Quiz ✨
-              </motion.button>
+                start quiz
+              </button>
 
               {/* Leaderboard (Only visible after unlock) */}
               {!isLocked && leaderboard.length > 0 && (
-                <div className="mt-12">
-                  <h3
-                    className="text-lg mb-4"
-                    style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
-                  >
-                    🏆 Leaderboard
+                <div className="pt-10 max-w-md mx-auto space-y-4 text-left">
+                  <h3 className="text-xs uppercase tracking-[0.2em] font-semibold text-[var(--color-dust)] text-center">
+                    Leaderboard
                   </h3>
                   <div className="space-y-2">
                     {leaderboard.map((entry, i) => (
                       <div
                         key={entry.id}
-                        className="flex items-center gap-3 p-3 rounded-xl"
-                        style={{ background: i === 0 ? 'rgba(212, 163, 115, 0.1)' : 'var(--color-cream)' }}
+                        className="flex items-center gap-4 p-3 rounded-[4px] border border-[var(--color-dust)]/25 bg-[var(--color-cream)]"
                       >
-                        <span className="text-lg w-8 text-center">
-                          {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`}
+                        <span className="text-xs font-medium text-[var(--color-dust)] w-6 text-center">
+                          {i + 1}
                         </span>
-                        <span className="flex-1 text-sm font-medium" style={{ color: 'var(--color-brown)' }}>
+                        <span className="flex-1 text-sm text-[var(--color-ink)] font-[family-name:var(--font-body)]">
                           {entry.guest_name || 'Anonymous'}
                         </span>
-                        <span className="text-sm tabular-nums" style={{ color: 'var(--color-accent-dark)' }}>
+                        <span className="text-sm font-light font-[family-name:var(--font-display)] text-[var(--color-sepia)] tabular-nums">
                           {entry.score}/{entry.total}
                         </span>
                       </div>
@@ -158,34 +155,33 @@ export default function QuizPage() {
           ) : isFinished ? (
             <motion.div
               key="results"
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="text-center"
+              className="text-center space-y-6"
             >
-              <span className="text-5xl block mb-4">
-                {score >= QUIZ_QUESTIONS.length * 0.8 ? '🎉' : score >= QUIZ_QUESTIONS.length * 0.5 ? '👏' : '😅'}
-              </span>
-              <h2
-                className="text-2xl mb-2"
-                style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
-              >
-                {score >= QUIZ_QUESTIONS.length * 0.8
-                  ? 'You really know her!'
-                  : score >= QUIZ_QUESTIONS.length * 0.5
-                  ? 'Not bad at all!'
-                  : 'Room for improvement 😄'}
-              </h2>
-              <p className="text-4xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent-dark)' }}>
-                {score}/{QUIZ_QUESTIONS.length}
-              </p>
-              <p className="text-sm mb-8" style={{ color: 'var(--color-text-muted)' }}>
-                correct answers
-              </p>
+              <div className="space-y-2">
+                <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
+                  Quiz complete
+                </span>
+                <h2
+                  className="text-3xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]"
+                >
+                  {score >= QUIZ_QUESTIONS.length * 0.8
+                    ? 'You really know her'
+                    : score >= QUIZ_QUESTIONS.length * 0.5
+                    ? 'Not bad at all'
+                    : 'Room for improvement'}
+                </h2>
+                <p className="text-5xl font-light font-[family-name:var(--font-display)] text-[var(--color-sepia)] pt-4 tabular-nums">
+                  {score}/{QUIZ_QUESTIONS.length}
+                </p>
+                <p className="text-xs uppercase tracking-[0.1em] text-[var(--color-dust)]">
+                  correct answers
+                </p>
+              </div>
 
-              <div className="flex gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
+              <div className="max-w-xs mx-auto">
+                <button
                   onClick={() => {
                     setCurrentQ(0);
                     setScore(0);
@@ -193,75 +189,77 @@ export default function QuizPage() {
                     setIsFinished(false);
                     setStarted(false);
                   }}
-                  className="flex-1 py-3 rounded-xl text-sm cursor-pointer"
-                  style={{ background: 'var(--color-cream)', color: 'var(--color-brown)' }}
+                  className="w-full py-3.5 border border-[var(--color-dust)] text-[var(--color-ink)] rounded-[4px] text-xs uppercase tracking-[0.2em] cursor-pointer hover:bg-[var(--color-cream)] transition-colors"
                 >
-                  Play Again
-                </motion.button>
+                  play again
+                </button>
               </div>
             </motion.div>
           ) : (
             <motion.div
               key={`q-${currentQ}`}
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-6 max-w-lg mx-auto"
             >
               {/* Progress */}
-              <div className="flex items-center gap-2 mb-8">
-                <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--color-cream)' }}>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-1 rounded-full overflow-hidden bg-[var(--color-cream)] border border-[var(--color-dust)]/20">
                   <motion.div
-                    className="h-full rounded-full"
-                    style={{ background: 'var(--color-accent)' }}
+                    className="h-full bg-[var(--color-blush)]"
                     initial={{ width: `${(currentQ / QUIZ_QUESTIONS.length) * 100}%` }}
                     animate={{ width: `${((currentQ + 1) / QUIZ_QUESTIONS.length) * 100}%` }}
                     transition={{ duration: 0.3 }}
                   />
                 </div>
-                <span className="text-xs tabular-nums" style={{ color: 'var(--color-text-muted)' }}>
+                <span className="text-xs text-[var(--color-dust)] tabular-nums">
                   {currentQ + 1}/{QUIZ_QUESTIONS.length}
                 </span>
               </div>
 
               {/* Question */}
               <h2
-                className="text-xl mb-6"
-                style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
+                className="text-2xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)] pt-4"
               >
                 {question.question}
               </h2>
 
               {/* Options */}
-              <div className="space-y-3">
+              <div className="space-y-3 pt-4">
                 {question.options.map((option, i) => {
                   const isSelected = answered === i;
                   const isCorrect = i === question.answer;
                   const showResult = answered !== null;
 
                   let bg = 'var(--color-cream)';
-                  let border = '1px solid rgba(93, 64, 55, 0.08)';
+                  let border = '1px solid var(--color-dust)';
+                  let color = 'var(--color-ink)';
+                  
                   if (showResult && isCorrect) {
-                    bg = 'rgba(107, 143, 113, 0.12)';
-                    border = '1px solid rgba(107, 143, 113, 0.3)';
+                    bg = 'rgba(201, 137, 122, 0.1)';
+                    border = '1px solid var(--color-blush)';
+                    color = 'var(--color-blush)';
                   } else if (showResult && isSelected && !isCorrect) {
-                    bg = 'rgba(192, 57, 43, 0.08)';
-                    border = '1px solid rgba(192, 57, 43, 0.2)';
+                    bg = 'rgba(26, 22, 20, 0.05)';
+                    border = '1px solid var(--color-dust)';
+                    color = 'var(--color-dust)';
                   }
 
                   return (
-                    <motion.button
+                    <button
                       key={i}
-                      whileHover={answered === null ? { scale: 1.02 } : {}}
-                      whileTap={answered === null ? { scale: 0.98 } : {}}
                       onClick={() => handleAnswer(i)}
                       disabled={answered !== null}
-                      className="w-full p-4 rounded-xl text-left text-sm transition-all cursor-pointer disabled:cursor-default"
-                      style={{ background: bg, border }}
+                      className="w-full p-4 rounded-[4px] text-left text-sm transition-colors cursor-pointer disabled:cursor-default"
+                      style={{ background: bg, border, color }}
                     >
-                      {option}
-                      {showResult && isCorrect && <span className="float-right">✓</span>}
-                      {showResult && isSelected && !isCorrect && <span className="float-right">✗</span>}
-                    </motion.button>
+                      <div className="flex items-center justify-between">
+                        <span>{option}</span>
+                        {showResult && isCorrect && <span className="text-xs uppercase tracking-[0.1em]">correct</span>}
+                        {showResult && isSelected && !isCorrect && <span className="text-xs uppercase tracking-[0.1em]">incorrect</span>}
+                      </div>
+                    </button>
                   );
                 })}
               </div>

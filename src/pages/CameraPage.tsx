@@ -1,69 +1,14 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGuest } from '../hooks/useGuest';
 import { useBirthdayLock } from '../hooks/useBirthdayLock';
+import { isCapsuleUnlocked } from '../lib/constants';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { PHOTO_FILTERS } from '../lib/constants';
 import type { Photo } from '../types/database';
 import PageWrapper from '../components/layout/PageWrapper';
 
-/* ─── Photo & Video Gallery ─── */
-function PhotoGallery({ photos }: { photos: Photo[] }) {
-  if (photos.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-          No memories yet. Be the first to add one!
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-2 gap-4">
-      {photos.map((photo, i) => (
-        <motion.div
-          key={photo.id}
-          initial={{ opacity: 0, scale: 0.8, rotate: -3 + Math.random() * 6 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: i * 0.05, duration: 0.4 }}
-          className="polaroid"
-          style={{
-            transform: `rotate(${-3 + Math.random() * 6}deg)`,
-          }}
-          whileHover={{
-            scale: 1.05,
-            rotate: 0,
-            boxShadow: '0 12px 40px rgba(93, 64, 55, 0.15)',
-            zIndex: 10,
-          }}
-        >
-          {photo.type === 'video' ? (
-            <video
-              src={photo.photo_url}
-              controls
-              playsInline
-              className="w-full aspect-square object-cover"
-            />
-          ) : (
-            <img
-              src={photo.photo_url}
-              alt="Memory"
-              className="w-full aspect-square object-cover"
-              loading="lazy"
-            />
-          )}
-          <span className="polaroid-caption text-[10px] text-center block pt-1.5" style={{ color: 'var(--color-text-muted)' }}>
-            {photo.guest_name || 'Guest'}
-            {photo.type === 'video' ? ' 🎥' : ''}
-          </span>
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-/* ─── Filter Preview (Only for photos) ─── */
+/* ─── Filter Preview ─── */
 function FilterPreview({ imageSrc, onUpload, onBack }: {
   imageSrc: string;
   onUpload: (filteredImage: string, filterId: string) => void;
@@ -91,7 +36,6 @@ function FilterPreview({ imageSrc, onUpload, onBack }: {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Scale down for mobile performance and to stay under Vercel's payload limit (about 100-200kb max)
     const maxSize = 800;
     const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
     canvas.width = img.width * scale;
@@ -101,7 +45,6 @@ function FilterPreview({ imageSrc, onUpload, onBack }: {
     ctx.filter = filter?.css || 'none';
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    // VHS effect: add scan lines
     if (filterId === 'vhs') {
       ctx.filter = 'none';
       for (let y = 0; y < canvas.height; y += 4) {
@@ -110,7 +53,6 @@ function FilterPreview({ imageSrc, onUpload, onBack }: {
       }
     }
 
-    // Polaroid effect: add white border on canvas
     if (filterId === 'polaroid') {
       ctx.filter = 'none';
       ctx.strokeStyle = 'rgba(255,255,255,0.3)';
@@ -134,27 +76,24 @@ function FilterPreview({ imageSrc, onUpload, onBack }: {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      className="space-y-6"
     >
-      {/* Preview */}
-      <div className="rounded-2xl overflow-hidden mb-4" style={{ background: 'var(--color-cream)' }}>
-        <canvas
-          ref={canvasRef}
-          className="w-full h-auto"
-        />
+      <div className="rounded-[4px] border border-[var(--color-dust)] overflow-hidden bg-[var(--color-cream)]">
+        <canvas ref={canvasRef} className="w-full h-auto block" />
       </div>
 
-      {/* Filter strip */}
-      <div className="mb-6 -mx-2 px-2 overflow-x-auto">
-        <div className="flex gap-2 pb-2" style={{ minWidth: 'max-content' }}>
+      {/* Filter Selector */}
+      <div className="overflow-x-auto pb-2 -mx-2 px-2">
+        <div className="flex gap-2" style={{ minWidth: 'max-content' }}>
           {PHOTO_FILTERS.map((filter) => (
             <button
               key={filter.id}
               onClick={() => applyFilter(filter.id)}
-              className="flex-shrink-0 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer"
+              className="px-4 py-2 rounded-[4px] text-xs uppercase tracking-[0.1em] transition-colors cursor-pointer"
               style={{
-                background: selectedFilter === filter.id ? 'var(--color-brown)' : 'var(--color-cream)',
-                color: selectedFilter === filter.id ? 'var(--color-cream)' : 'var(--color-text)',
-                border: `1px solid ${selectedFilter === filter.id ? 'var(--color-brown)' : 'rgba(93, 64, 55, 0.08)'}`,
+                background: selectedFilter === filter.id ? 'var(--color-ink)' : 'var(--color-cream)',
+                color: selectedFilter === filter.id ? 'var(--color-cream)' : 'var(--color-dust)',
+                border: `1px solid ${selectedFilter === filter.id ? 'var(--color-ink)' : 'var(--color-dust)'}`,
               }}
             >
               {filter.name}
@@ -163,232 +102,264 @@ function FilterPreview({ imageSrc, onUpload, onBack }: {
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-3">
+      <div className="flex gap-4">
         <button
           onClick={onBack}
-          className="flex-1 py-3 rounded-xl text-sm font-medium cursor-pointer"
-          style={{
-            background: 'var(--color-cream)',
-            color: 'var(--color-text)',
-            border: '1px solid rgba(93, 64, 55, 0.08)',
-          }}
+          className="flex-1 py-3.5 border border-[var(--color-dust)] text-[var(--color-ink)] rounded-[4px] text-xs uppercase tracking-[0.2em] cursor-pointer hover:bg-[var(--color-cream)] transition-colors"
         >
-          ← Back
+          back
         </button>
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <button
           onClick={handleUpload}
-          className="flex-1 py-3 rounded-xl text-sm font-medium cursor-pointer"
-          style={{
-            background: 'var(--color-brown)',
-            color: 'var(--color-cream)',
-            boxShadow: '0 4px 16px rgba(93, 64, 55, 0.15)',
-          }}
+          className="flex-1 py-3.5 bg-[var(--color-ink)] text-[var(--color-cream)] rounded-[4px] text-xs uppercase tracking-[0.2em] cursor-pointer hover:bg-[var(--color-ink)]/90 transition-colors"
         >
-          Upload 📸
-        </motion.button>
+          save memory
+        </button>
       </div>
     </motion.div>
   );
 }
 
-/* ─── Camera Page ─── */
+/* ─── Main Camera Page ─── */
 export default function CameraPage() {
   const { guestName, isRegistered, setShowRegistration } = useGuest();
   const { isLocked } = useBirthdayLock();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  
+  // Upload and progress state
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const photoFileInputRef = useRef<HTMLInputElement>(null);
-  const photoCameraInputRef = useRef<HTMLInputElement>(null);
-  const videoFileInputRef = useRef<HTMLInputElement>(null);
-  const videoCameraInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const fetchPhotos = useCallback(async () => {
-    if (isSupabaseConfigured() && !isLocked) {
-      const { data } = await supabase
-        .from('photos')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (data) setPhotos(data as Photo[]);
+    const mode = localStorage.getItem('mode');
+    const unlocked = isCapsuleUnlocked();
+
+    // Query gate: if not admin and locked, DO NOT query
+    if (mode !== 'admin' && !unlocked) {
+      return;
     }
-  }, [isLocked]);
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data } = await supabase
+          .from('photos')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (data) setPhotos(data as Photo[]);
+      } catch (err) {
+        console.error('Failed to fetch photos:', err);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetchPhotos();
   }, [fetchPhotos]);
 
+  // Client-side validation helper
+  const validateFile = (file: File, type: 'photo' | 'video'): boolean => {
+    if (!isRegistered) {
+      setShowRegistration(true);
+      return false;
+    }
+
+    const photoLimit = 10 * 1024 * 1024; // 10MB
+    const videoLimit = 50 * 1024 * 1024; // 50MB
+
+    if (type === 'photo' && file.size > photoLimit) {
+      setErrorMessage('photos must be under 10MB');
+      return false;
+    }
+
+    if (type === 'video' && file.size > videoLimit) {
+      setErrorMessage('videos must be under 50MB');
+      return false;
+    }
+
+    setErrorMessage(null);
+    return true;
+  };
+
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!isRegistered) {
-      setShowRegistration(true);
-      return;
-    }
+    if (!validateFile(file, 'photo')) return;
 
     const reader = new FileReader();
     reader.onload = (event) => {
       setCapturedImage(event.target?.result as string);
-      setErrorMessage(null);
     };
     reader.readAsDataURL(file);
+  };
+
+  // Perform upload using XMLHttpRequest to track progress
+  const uploadMedia = (fileDataUrl: string, fileName: string, fileType: string, isVideo: boolean, filterId: string | null) => {
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload');
+    xhr.setRequestHeader('Content-Type', 'application/json');
+
+    // Track upload progress
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentage = Math.round((event.loaded / event.total) * 100);
+        setUploadProgress(percentage);
+      }
+    };
+
+    xhr.onload = async () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const uploadResult = JSON.parse(xhr.responseText);
+          if (uploadResult.error) throw new Error(uploadResult.error);
+
+          if (isSupabaseConfigured()) {
+            await supabase.from('photos').insert([{
+              guest_name: guestName,
+              photo_url: uploadResult.url,
+              drive_file_id: uploadResult.fileId,
+              filter_used: filterId,
+              type: isVideo ? 'video' : 'photo',
+            }]);
+          }
+
+          setIsUploading(false);
+          setUploadSuccess(true);
+          setTimeout(() => setUploadSuccess(false), 3000);
+          fetchPhotos();
+        } catch (err: any) {
+          console.error(err);
+          setErrorMessage(err.message || 'failed to save upload metadata');
+          setIsUploading(false);
+        }
+      } else {
+        setErrorMessage('failed to upload asset to drive');
+        setIsUploading(false);
+      }
+    };
+
+    xhr.onerror = () => {
+      setErrorMessage('network upload error occurred');
+      setIsUploading(false);
+    };
+
+    xhr.send(JSON.stringify({
+      fileName,
+      fileType,
+      fileData: fileDataUrl,
+      guestName,
+    }));
   };
 
   const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!isRegistered) {
-      setShowRegistration(true);
-      return;
-    }
-
-    // Limit to 4.5MB for Vercel Serverless Function payload limit
-    const maxSize = 4.5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      setErrorMessage('Videos must be under 4.5MB to be saved (about 10-15s). Try recording a shorter clip!');
-      return;
-    }
-
-    setErrorMessage(null);
-    setIsUploading(true);
+    if (!validateFile(file, 'video')) return;
 
     const reader = new FileReader();
-    reader.onload = async (event) => {
-      const videoDataUrl = event.target?.result as string;
-      try {
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fileName: `${guestName || 'guest'}_${Date.now()}_video.mp4`,
-            fileType: file.type || 'video/mp4',
-            fileData: videoDataUrl,
-            guestName: guestName,
-          }),
-        });
-
-        const uploadResult = await response.json();
-        if (uploadResult.error) throw new Error(uploadResult.error);
-
-        if (isSupabaseConfigured()) {
-          await supabase.from('photos').insert([{
-            guest_name: guestName,
-            photo_url: uploadResult.url,
-            drive_file_id: uploadResult.fileId,
-            filter_used: null,
-            type: 'video',
-          }]);
-        } else {
-          // Local fallback
-          setPhotos(prev => [{
-            id: crypto.randomUUID(),
-            guest_name: guestName || 'Anonymous',
-            photo_url: videoDataUrl,
-            drive_file_id: null,
-            filter_used: null,
-            type: 'video',
-            created_at: new Date().toISOString(),
-          }, ...prev]);
-        }
-
-        setUploadSuccess(true);
-        setTimeout(() => setUploadSuccess(false), 3000);
-        fetchPhotos();
-      } catch (err: any) {
-        console.error('Video Upload Error:', err);
-        setErrorMessage(err.message || 'Failed to upload video. Please try again.');
-      } finally {
-        setIsUploading(false);
-      }
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const fileName = `${guestName || 'guest'}_${Date.now()}_video.mp4`;
+      uploadMedia(dataUrl, fileName, file.type || 'video/mp4', true, null);
     };
     reader.readAsDataURL(file);
   };
 
-  const handlePhotoUpload = async (filteredImage: string, filterId: string) => {
-    if (!isRegistered) {
-      setShowRegistration(true);
-      return;
-    }
-
-    setIsUploading(true);
-    setErrorMessage(null);
-    try {
-      // Upload via Vercel Google Drive upload API
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: `${guestName || 'guest'}_${Date.now()}_photo.jpg`,
-          fileType: 'image/jpeg',
-          fileData: filteredImage,
-          guestName: guestName,
-        }),
-      });
-
-      const uploadResult = await response.json();
-      if (uploadResult.error) throw new Error(uploadResult.error);
-
-      if (isSupabaseConfigured()) {
-        // Save metadata in Supabase
-        await supabase.from('photos').insert([{
-          guest_name: guestName,
-          photo_url: uploadResult.url,
-          drive_file_id: uploadResult.fileId,
-          filter_used: filterId,
-          type: 'photo',
-        }]);
-      } else {
-        // Local mode — just add to state
-        setPhotos(prev => [{
-          id: crypto.randomUUID(),
-          guest_name: guestName || 'Anonymous',
-          photo_url: filteredImage,
-          drive_file_id: null,
-          filter_used: filterId,
-          type: 'photo',
-          created_at: new Date().toISOString(),
-        }, ...prev]);
-      }
-
-      setCapturedImage(null);
-      setUploadSuccess(true);
-      setTimeout(() => setUploadSuccess(false), 3000);
-      fetchPhotos();
-    } catch (err: any) {
-      console.error('Upload error:', err);
-      setErrorMessage(err.message || 'Failed to upload photo. Please try again.');
-    } finally {
-      setIsUploading(false);
-    }
+  const handlePhotoUpload = (filteredImage: string, filterId: string) => {
+    const fileName = `${guestName || 'guest'}_${Date.now()}_photo.jpg`;
+    setCapturedImage(null);
+    uploadMedia(filteredImage, fileName, 'image/jpeg', false, filterId);
   };
 
   return (
-    <PageWrapper>
-      <div className="px-6 pt-16 pb-8 max-w-lg mx-auto">
+    <PageWrapper className="bg-[#FAF7F2]">
+      {/* Film grain */}
+      <div className="film-grain pointer-events-none fixed inset-0 z-40" />
+
+      {/* Full screen Success Confirmation Overlay */}
+      <AnimatePresence>
+        {uploadSuccess && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#1A1614] text-[#FAF7F2]"
+          >
+            <div className="text-center space-y-4">
+              <h1 className="text-4xl font-light font-[family-name:var(--font-display)]">
+                added to capsule
+              </h1>
+              <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)]">
+                your contribution has been saved
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Upload Progress Overlay */}
+      <AnimatePresence>
+        {isUploading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#1A1614]/95 text-[#FAF7F2] p-8"
+          >
+            <div className="w-full max-w-xs text-center space-y-4">
+              <h3 className="text-xl font-light font-[family-name:var(--font-display)]">
+                sealing media in capsule
+              </h3>
+              
+              {/* Progress track */}
+              <div className="w-full h-1 bg-[var(--color-dust)]/20 overflow-hidden rounded-full relative">
+                <motion.div
+                  className="h-full bg-[var(--color-blush)]"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-dust)]">
+                {uploadProgress}% uploaded
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="px-6 pt-20 pb-8 max-w-[860px] mx-auto space-y-8">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8"
+          className="text-center space-y-2"
         >
+          <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
+            Archive memories
+          </span>
           <h1
-            className="text-3xl md:text-4xl mb-2"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
+            className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]"
           >
-            Add To The Album
+            album
           </h1>
-          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            Take photos and videos, choose retro filters, and build our shared memory archive.
-          </p>
         </motion.div>
+
+        {errorMessage && (
+          <div
+            className="p-3 border border-[var(--color-blush)] text-[var(--color-blush)] text-xs text-center rounded-[4px] uppercase tracking-wider"
+          >
+            {errorMessage}
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
           {capturedImage ? (
@@ -400,181 +371,100 @@ export default function CameraPage() {
             />
           ) : (
             <motion.div
-              key="capture"
+              key="uploader"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              className="space-y-8"
             >
-              {/* Errors or Upload success */}
-              <AnimatePresence>
-                {uploadSuccess && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="mb-6 p-5 rounded-2xl text-center shadow-sm"
-                    style={{
-                      background: 'var(--color-cream)',
-                      border: '1px solid rgba(107, 143, 113, 0.3)',
-                    }}
-                  >
-                    <h3 className="text-sm font-semibold text-[var(--color-success)] mb-1">
-                      Added to Birthday Capsule ✨
-                    </h3>
-                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                      Your contribution has been safely stored and will be revealed on July 5.
+              {/* Ruled drag-drop containers grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Photo Target Frame (Polaroid representation) */}
+                <div
+                  onClick={() => photoInputRef.current?.click()}
+                  className="group flex flex-col items-center justify-center p-6 border-2 border-dashed border-[var(--color-dust)]/40 hover:border-[var(--color-blush)] bg-[var(--color-cream)] aspect-[4/5] rounded-[4px] cursor-pointer transition-colors text-center"
+                >
+                  <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
+                    <span className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] group-hover:text-[var(--color-ink)] transition-colors">
+                      photo upload
+                    </span>
+                    <p className="text-sm italic font-[family-name:var(--font-display)] text-[var(--color-dust)] max-w-[160px] mx-auto leading-relaxed">
+                      drop a photo here, or tap to choose
                     </p>
-                  </motion.div>
-                )}
-                {errorMessage && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="mb-4 p-3 rounded-xl text-center text-xs"
-                    style={{ background: 'rgba(192, 57, 43, 0.08)', color: 'rgba(192, 57, 43, 0.9)' }}
-                  >
-                    ⚠️ {errorMessage}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  </div>
+                </div>
 
-              {/* Capture buttons grid */}
-              <div className="grid grid-cols-2 gap-3 mb-8">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    if (!isRegistered) { setShowRegistration(true); return; }
-                    photoCameraInputRef.current?.click();
-                  }}
-                  className="py-6 rounded-2xl flex flex-col items-center gap-1.5 cursor-pointer"
-                  style={{
-                    background: 'var(--color-brown)',
-                    color: 'var(--color-cream)',
-                    boxShadow: '0 4px 16px rgba(93, 64, 55, 0.12)',
-                  }}
+                {/* Video Target Frame */}
+                <div
+                  onClick={() => videoInputRef.current?.click()}
+                  className="group flex flex-col items-center justify-center p-6 border-2 border-dashed border-[var(--color-dust)]/40 hover:border-[var(--color-blush)] bg-[var(--color-cream)] aspect-[4/5] rounded-[4px] cursor-pointer transition-colors text-center"
                 >
-                  <span className="text-2xl">📸</span>
-                  <span className="text-xs font-semibold">Take Photo</span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    if (!isRegistered) { setShowRegistration(true); return; }
-                    videoCameraInputRef.current?.click();
-                  }}
-                  className="py-6 rounded-2xl flex flex-col items-center gap-1.5 cursor-pointer"
-                  style={{
-                    background: 'var(--color-brown)',
-                    color: 'var(--color-cream)',
-                    boxShadow: '0 4px 16px rgba(93, 64, 55, 0.12)',
-                  }}
-                >
-                  <span className="text-2xl">🎥</span>
-                  <span className="text-xs font-semibold">Record Video</span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    if (!isRegistered) { setShowRegistration(true); return; }
-                    photoFileInputRef.current?.click();
-                  }}
-                  className="py-6 rounded-2xl flex flex-col items-center gap-1.5 cursor-pointer"
-                  style={{
-                    background: 'var(--color-cream)',
-                    color: 'var(--color-brown)',
-                    border: '1px solid rgba(93, 64, 55, 0.08)',
-                  }}
-                >
-                  <span className="text-2xl">🖼️</span>
-                  <span className="text-xs font-semibold">Upload Photo</span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    if (!isRegistered) { setShowRegistration(true); return; }
-                    videoFileInputRef.current?.click();
-                  }}
-                  className="py-6 rounded-2xl flex flex-col items-center gap-1.5 cursor-pointer"
-                  style={{
-                    background: 'var(--color-cream)',
-                    color: 'var(--color-brown)',
-                    border: '1px solid rgba(93, 64, 55, 0.08)',
-                  }}
-                >
-                  <span className="text-2xl">🎞️</span>
-                  <span className="text-xs font-semibold">Upload Video</span>
-                </motion.button>
+                  <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
+                    <span className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] group-hover:text-[var(--color-ink)] transition-colors">
+                      video upload
+                    </span>
+                    <p className="text-sm italic font-[family-name:var(--font-display)] text-[var(--color-dust)] max-w-[160px] mx-auto leading-relaxed">
+                      drop a video here, or tap to choose
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Hidden Inputs */}
+              {/* Hidden file inputs */}
               <input
-                ref={photoCameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handlePhotoSelect}
-                className="hidden"
-              />
-              <input
-                ref={photoFileInputRef}
+                ref={photoInputRef}
                 type="file"
                 accept="image/*"
                 onChange={handlePhotoSelect}
                 className="hidden"
               />
               <input
-                ref={videoCameraInputRef}
-                type="file"
-                accept="video/*"
-                capture="environment"
-                onChange={handleVideoSelect}
-                className="hidden"
-              />
-              <input
-                ref={videoFileInputRef}
+                ref={videoInputRef}
                 type="file"
                 accept="video/*"
                 onChange={handleVideoSelect}
                 className="hidden"
               />
 
-              {/* Gallery (Only visible after unlock) */}
-              {!isLocked && (
-                <div>
-                  <h3
-                    className="text-lg mb-4"
-                    style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
-                  >
-                    Tonight's Memories
-                  </h3>
-                  <PhotoGallery photos={photos} />
+              {/* Shared items (Only visible after unlock) */}
+              {!isLocked && photos.length > 0 && (
+                <div className="space-y-6 pt-8">
+                  <h2 className="text-xs uppercase tracking-[0.2em] font-semibold text-[var(--color-dust)] text-center">
+                    Shared Gallery
+                  </h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {photos.map((photo, i) => (
+                      <div
+                        key={photo.id}
+                        className="polaroid"
+                        style={{ transform: `rotate(${-2 + Math.random() * 4}deg)` }}
+                      >
+                        {photo.type === 'video' ? (
+                          <video
+                            src={photo.photo_url}
+                            controls
+                            playsInline
+                            className="w-full aspect-square object-cover"
+                          />
+                        ) : (
+                          <img
+                            src={photo.photo_url}
+                            alt="Memory"
+                            className="w-full aspect-square object-cover"
+                            loading="lazy"
+                          />
+                        )}
+                        <span className="polaroid-caption text-[10px] text-center block pt-1.5 text-[var(--color-dust)]">
+                          {photo.guest_name || 'guest'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </motion.div>
           )}
         </AnimatePresence>
-
-        {isUploading && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(250, 247, 242, 0.9)' }}>
-            <div className="text-center">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-                className="w-8 h-8 rounded-full border-2 border-t-transparent mx-auto mb-3"
-                style={{ borderColor: 'var(--color-accent)', borderTopColor: 'transparent' }}
-              />
-              <p className="text-sm font-medium animate-pulse" style={{ color: 'var(--color-brown)' }}>Uploading memory...</p>
-            </div>
-          </div>
-        )}
       </div>
     </PageWrapper>
   );

@@ -1,60 +1,59 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGuest } from '../hooks/useGuest';
 import { useBirthdayLock } from '../hooks/useBirthdayLock';
+import { isCapsuleUnlocked } from '../lib/constants';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { OneWord } from '../types/database';
 import PageWrapper from '../components/layout/PageWrapper';
-
-const WORD_COLORS = [
-  'var(--color-brown)',
-  'var(--color-accent-dark)',
-  'var(--color-brown-light)',
-  'var(--color-accent)',
-  '#8b6f47',
-  '#a07850',
-];
-
-const WORD_SIZES = ['text-lg', 'text-xl', 'text-2xl', 'text-3xl', 'text-4xl'];
 
 function WordCloud({ words }: { words: OneWord[] }) {
   if (words.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-          Be the first to add a word...
+        <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)]">
+          Be the first to add a word
         </p>
       </div>
     );
   }
 
+  const wordColors = [
+    'var(--color-ink)',
+    'var(--color-blush)',
+    'var(--color-sepia)',
+    'var(--color-dust)',
+  ];
+
+  const wordSizes = ['text-lg', 'text-xl', 'text-2xl', 'text-3xl'];
+
   return (
     <div className="relative min-h-[300px] flex flex-wrap items-center justify-center gap-4 px-4 py-8">
       {words.map((word, i) => {
-        const size = WORD_SIZES[Math.min(Math.floor(Math.random() * WORD_SIZES.length), WORD_SIZES.length - 1)];
-        const color = WORD_COLORS[i % WORD_COLORS.length];
-        const rotation = -8 + Math.random() * 16;
-        const driftX = -10 + Math.random() * 20;
-        const driftY = -10 + Math.random() * 20;
+        const size = wordSizes[i % wordSizes.length];
+        const color = wordColors[i % wordColors.length];
+        const rotation = -8 + (i * 7) % 16;
+        const driftX = -10 + (i * 3) % 20;
+        const driftY = -10 + (i * 4) % 20;
 
         return (
           <motion.div
             key={word.id}
-            initial={{ opacity: 0, scale: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.08, duration: 0.5, type: 'spring', stiffness: 200 }}
-            className={`${size} font-medium cursor-default select-none`}
+            transition={{ delay: i * 0.05 }}
+            className={`${size} font-light cursor-default select-none`}
             style={{
               fontFamily: 'var(--font-display)',
               color,
               transform: `rotate(${rotation}deg)`,
-              animation: `wordDrift ${6 + Math.random() * 4}s ease-in-out infinite`,
-              animationDelay: `${Math.random() * 3}s`,
+              animation: `wordDrift ${6 + (i % 4)}s ease-in-out infinite`,
+              animationDelay: `${(i % 3) * 0.5}s`,
               ['--drift-x' as string]: `${driftX}px`,
               ['--drift-y' as string]: `${driftY}px`,
               ['--word-rotate' as string]: `${rotation}deg`,
             }}
-            title={`— ${word.guest_name || 'Anonymous'}`}
+            title={`— ${word.guest_name || 'anonymous'}`}
           >
             {word.word}
           </motion.div>
@@ -73,14 +72,26 @@ export default function OneWordPage() {
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const fetchWords = useCallback(async () => {
-    if (isSupabaseConfigured() && !isLocked) {
-      const { data } = await supabase
-        .from('one_word')
-        .select('*')
-        .order('created_at', { ascending: true });
-      if (data) setWords(data as unknown as OneWord[]);
+    const mode = localStorage.getItem('mode');
+    const unlocked = isCapsuleUnlocked();
+
+    // Query gate: if not admin and locked, DO NOT query
+    if (mode !== 'admin' && !unlocked) {
+      return;
     }
-  }, [isLocked]);
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data } = await supabase
+          .from('one_word')
+          .select('*')
+          .order('created_at', { ascending: true });
+        if (data) setWords(data as unknown as OneWord[]);
+      } catch (err) {
+        console.error('Failed to fetch words:', err);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetchWords();
@@ -98,12 +109,13 @@ export default function OneWordPage() {
     setIsSubmitting(true);
     try {
       if (isSupabaseConfigured()) {
-        await supabase.from('one_word').insert([{
+        const { error } = await supabase.from('one_word').insert([{
           guest_name: guestName,
           word: inputWord.trim(),
         }]);
+        if (error) throw error;
       } else {
-        // Local-only mode
+        // Local fallback
         setWords(prev => [...prev, {
           id: crypto.randomUUID(),
           guest_name: guestName || 'Anonymous',
@@ -113,6 +125,7 @@ export default function OneWordPage() {
       }
       setInputWord('');
       setHasSubmitted(true);
+      fetchWords();
     } catch (err) {
       console.error('Error submitting word:', err);
     } finally {
@@ -121,110 +134,83 @@ export default function OneWordPage() {
   };
 
   return (
-    <PageWrapper>
-      <div className="px-6 pt-16 pb-8 max-w-lg mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8"
-        >
-          <h1
-            className="text-3xl md:text-4xl mb-2"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
-          >
-            Ek Shabd.
-          </h1>
-          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            If you had to describe her in one word, what would it be?
-          </p>
-        </motion.div>
+    <PageWrapper className="relative min-h-[100dvh] flex flex-col justify-between bg-[#1A1614] overflow-hidden">
+      {/* Film grain */}
+      <div className="film-grain pointer-events-none fixed inset-0 z-40" />
 
-        {/* Word Cloud (Only visible after unlock) */}
-        {!isLocked && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className="rounded-2xl p-4 mb-8"
-            style={{
-              background: 'var(--color-cream)',
-              border: '1px solid rgba(93, 64, 55, 0.06)',
-              minHeight: '250px',
-            }}
-          >
-            <WordCloud words={words} />
-          </motion.div>
-        )}
+      {/* Dark Vignette Overlay */}
+      <div className="ink-vignette absolute inset-0 z-10 pointer-events-none" />
 
-        {/* Input */}
+      <div className="relative z-20 flex-1 flex flex-col justify-center px-6 max-w-[860px] mx-auto w-full">
         <AnimatePresence mode="wait">
           {hasSubmitted ? (
             <motion.div
               key="thanks"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-12 rounded-2xl"
-              style={{
-                background: 'var(--color-cream)',
-                border: '1px solid rgba(93, 64, 55, 0.08)',
-              }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center space-y-6 flex flex-col items-center justify-center flex-1"
             >
-              <span className="text-3xl block mb-2">✨</span>
-              <h3 className="text-lg font-medium mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}>
-                Added to Birthday Capsule
-              </h3>
-              <p className="text-xs max-w-xs mx-auto mb-4" style={{ color: 'var(--color-text-muted)' }}>
-                Your contribution has been safely stored and will be revealed on July 5.
+              <h1 className="text-3xl font-light font-[family-name:var(--font-display)] text-[#FAF7F2]">
+                added to capsule
+              </h1>
+              <p className="text-sm text-[var(--color-dust)] max-w-xs">
+                Your word has been stored in the birthday capsule.
               </p>
               <button
                 onClick={() => setHasSubmitted(false)}
-                className="text-xs underline cursor-pointer"
-                style={{ color: 'var(--color-text-muted)' }}
+                className="text-xs uppercase tracking-[0.2em] underline text-[var(--color-dust)] hover:text-[#FAF7F2] cursor-pointer mt-4"
               >
-                Add another word
+                add another word
               </button>
             </motion.div>
           ) : (
-            <motion.form
-              key="form"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              onSubmit={handleSubmit}
-              className="flex gap-3"
+            <motion.div
+              key="editor"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex-1 flex flex-col justify-center"
             >
-              <input
-                type="text"
-                value={inputWord}
-                onChange={(e) => setInputWord(e.target.value)}
-                placeholder="One word..."
-                maxLength={30}
-                className="flex-1 px-4 py-3 rounded-xl text-sm outline-none"
-                style={{
-                  background: 'var(--color-cream)',
-                  color: 'var(--color-text)',
-                  border: '1px solid rgba(93, 64, 55, 0.08)',
-                }}
-              />
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                type="submit"
-                disabled={!inputWord.trim() || isSubmitting}
-                className="px-6 py-3 rounded-xl text-sm font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: 'var(--color-brown)',
-                  color: 'var(--color-cream)',
-                }}
-              >
-                {isSubmitting ? '...' : 'Add'}
-              </motion.button>
-            </motion.form>
+              <form onSubmit={handleSubmit} className="text-center w-full flex flex-col items-center justify-center">
+                <input
+                  type="text"
+                  value={inputWord}
+                  onChange={(e) => setInputWord(e.target.value)}
+                  placeholder={isSubmitting ? "adding..." : "one word"}
+                  maxLength={20}
+                  autoFocus
+                  autoComplete="off"
+                  className="w-full bg-transparent text-center border-none outline-none caret-[var(--color-blush)]"
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: 'clamp(2.5rem, 8vw, 6.5rem)',
+                    color: 'var(--color-blush)',
+                    letterSpacing: '0.02em',
+                  }}
+                />
+                <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-dust)] mt-8">
+                  press enter to save
+                </p>
+              </form>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
+
+      {/* Word Cloud display at the bottom (Only visible after unlock, rendered in light context) */}
+      {!isLocked && words.length > 0 && (
+        <div className="relative z-20 bg-[#FAF7F2] border-t border-[var(--color-dust)]/10 py-12 px-6">
+          <div className="max-w-[860px] mx-auto space-y-6">
+            <h2 className="text-xs uppercase tracking-[0.2em] font-semibold text-[var(--color-dust)] text-center">
+              Word Cloud
+            </h2>
+            <div className="rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)]">
+              <WordCloud words={words} />
+            </div>
+          </div>
+        </div>
+      )}
     </PageWrapper>
   );
 }

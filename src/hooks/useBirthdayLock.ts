@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { BIRTHDAY_DATE } from '../lib/constants';
+import { CAPSULE_UNLOCK } from '../lib/constants';
 
 interface BirthdayLockState {
   isLocked: boolean;
@@ -24,15 +24,15 @@ export function useBirthdayLock(): BirthdayLockState {
   }, []);
 
   return useMemo(() => {
-    const diff = BIRTHDAY_DATE.getTime() - now.getTime();
+    const diff = CAPSULE_UNLOCK.getTime() - now.getTime();
     const isLocked = diff > 0;
 
     if (!isLocked) {
       return {
         isLocked: false,
         timeRemaining: { days: 0, hours: 0, minutes: 0, seconds: 0 },
-        countdownDisplay: 'Unlocked! 🎉',
-        unlockDate: BIRTHDAY_DATE,
+        countdownDisplay: 'Unlocked',
+        unlockDate: CAPSULE_UNLOCK,
       };
     }
 
@@ -51,7 +51,7 @@ export function useBirthdayLock(): BirthdayLockState {
       isLocked,
       timeRemaining: { days, hours, minutes, seconds },
       countdownDisplay: parts.join(' '),
-      unlockDate: BIRTHDAY_DATE,
+      unlockDate: CAPSULE_UNLOCK,
     };
   }, [now]);
 }

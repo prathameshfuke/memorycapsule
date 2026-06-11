@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useGuest } from '../hooks/useGuest';
 import { CHARADES_PROMPTS, NEVER_HAVE_I_EVER, MEET_PROMPTS } from '../lib/constants';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import PageWrapper from '../components/layout/PageWrapper';
@@ -26,82 +25,66 @@ function DumbCharades({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div>
-      <button onClick={onBack} className="text-sm mb-6 cursor-pointer" style={{ color: 'var(--color-text-muted)' }}>
+    <div className="space-y-6">
+      <button onClick={onBack} className="text-xs uppercase tracking-[0.2em] mb-4 cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)]">
         ← Back to Games
       </button>
 
-      <h2 className="text-2xl mb-6 text-center" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}>
-        🎭 Dumb Charades
+      <h2 className="text-3xl font-light text-center text-[var(--color-ink)] font-[family-name:var(--font-display)]">
+        Dumb Charades
       </h2>
 
       {!prompt ? (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           {categories.map((cat) => (
-            <motion.button
+            <button
               key={cat}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
               onClick={() => generatePrompt(cat)}
-              className="py-6 rounded-2xl text-sm font-medium cursor-pointer"
-              style={{
-                background: 'var(--color-cream)',
-                color: 'var(--color-brown)',
-                border: '1px solid rgba(93, 64, 55, 0.08)',
-              }}
+              className="py-6 rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)] text-[var(--color-ink)] text-xs uppercase tracking-[0.1em] font-medium cursor-pointer hover:bg-[var(--color-cream)]/80 transition-colors"
             >
               {cat}
-            </motion.button>
+            </button>
           ))}
         </div>
       ) : (
-        <div className="text-center">
-          <p className="text-xs uppercase tracking-widest mb-4" style={{ color: 'var(--color-text-muted)' }}>
-            {category}
+        <div className="text-center space-y-6">
+          <p className="text-[10px] uppercase tracking-widest text-[var(--color-dust)]">
+            Category: {category}
           </p>
 
-          <motion.div
-            key={prompt}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="py-12 px-6 rounded-2xl mb-6 min-h-[180px] flex items-center justify-center cursor-pointer"
+          <div
+            className="py-16 px-6 rounded-[4px] border border-[var(--color-dust)] min-h-[180px] flex flex-col items-center justify-center cursor-pointer transition-colors"
             style={{
-              background: revealed ? 'var(--color-cream)' : 'var(--color-brown)',
-              border: '1px solid rgba(93, 64, 55, 0.1)',
+              background: revealed ? 'var(--color-cream)' : 'var(--color-ink)',
             }}
             onClick={() => setRevealed(!revealed)}
           >
             {revealed ? (
-              <p className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}>
+              <p className="text-2xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
                 {prompt}
               </p>
             ) : (
-              <div className="text-center">
-                <span className="text-4xl block mb-2">🤫</span>
-                <p className="text-sm" style={{ color: 'var(--color-cream)' }}>
+              <div className="text-center space-y-2">
+                <p className="text-xs uppercase tracking-[0.15em] text-[var(--color-cream)]">
                   Tap to reveal
                 </p>
               </div>
             )}
-          </motion.div>
+          </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-4">
             <button
               onClick={() => { setPrompt(null); setCategory(null); }}
-              className="flex-1 py-3 rounded-xl text-sm cursor-pointer"
-              style={{ background: 'var(--color-cream)', color: 'var(--color-text)' }}
+              className="flex-1 py-3.5 border border-[var(--color-dust)] text-[var(--color-ink)] rounded-[4px] text-xs uppercase tracking-[0.15em] cursor-pointer hover:bg-[var(--color-cream)]"
             >
               Change Category
             </button>
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+            <button
               onClick={nextPrompt}
-              className="flex-1 py-3 rounded-xl text-sm font-medium cursor-pointer"
-              style={{ background: 'var(--color-brown)', color: 'var(--color-cream)' }}
+              className="flex-1 py-3.5 bg-[var(--color-ink)] text-[var(--color-cream)] rounded-[4px] text-xs uppercase tracking-[0.15em] cursor-pointer hover:bg-[var(--color-ink)]/90"
             >
-              Next →
-            </motion.button>
+              Next Prompt →
+            </button>
           </div>
         </div>
       )}
@@ -118,47 +101,35 @@ function NeverHaveIEverGame({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div>
-      <button onClick={onBack} className="text-sm mb-6 cursor-pointer" style={{ color: 'var(--color-text-muted)' }}>
+    <div className="space-y-6">
+      <button onClick={onBack} className="text-xs uppercase tracking-[0.2em] mb-4 cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)]">
         ← Back to Games
       </button>
 
-      <h2 className="text-2xl mb-8 text-center" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}>
-        🙈 Never Have I Ever
+      <h2 className="text-3xl font-light text-center text-[var(--color-ink)] font-[family-name:var(--font-display)]">
+        Never Have I Ever
       </h2>
 
       <motion.div
         key={currentIndex}
-        initial={{ opacity: 0, x: 50 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -50 }}
-        className="py-16 px-8 rounded-2xl text-center mb-8"
-        style={{
-          background: 'var(--color-cream)',
-          border: '1px solid rgba(93, 64, 55, 0.06)',
-        }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        className="py-16 px-8 rounded-[4px] border border-[var(--color-dust)] text-center bg-[var(--color-cream)]"
       >
         <p
-          className="text-xl leading-relaxed"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
+          className="text-xl font-light leading-relaxed font-[family-name:var(--font-display)] text-[var(--color-ink)]"
         >
           {NEVER_HAVE_I_EVER[currentIndex]}
         </p>
       </motion.div>
 
-      <motion.button
-        whileHover={{ scale: 1.03 }}
-        whileTap={{ scale: 0.97 }}
+      <button
         onClick={next}
-        className="w-full py-4 rounded-xl text-sm font-medium cursor-pointer"
-        style={{
-          background: 'var(--color-brown)',
-          color: 'var(--color-cream)',
-          boxShadow: '0 4px 16px rgba(93, 64, 55, 0.15)',
-        }}
+        className="w-full py-4 bg-[var(--color-ink)] text-[var(--color-cream)] rounded-[4px] text-xs uppercase tracking-[0.2em] cursor-pointer hover:bg-[var(--color-ink)]/90 transition-colors"
       >
-        Next Prompt 🎲
-      </motion.button>
+        Next Prompt
+      </button>
     </div>
   );
 }
@@ -185,14 +156,12 @@ function MeetSomeoneGame({ onBack }: { onBack: () => void }) {
             const shuffled = [...names].sort(() => Math.random() - 0.5);
             setMatchedGuests([{ name: shuffled[0] }, { name: shuffled[1] }]);
           } else {
-            // Only 1 person has submitted so far
             setMatchedGuests([
               { name: names[0] },
               { name: 'the next person who joins' },
             ]);
           }
         } else {
-          // No submissions yet
           setMatchedGuests([
             { name: 'First Guest' },
             { name: 'Second Guest' },
@@ -213,48 +182,44 @@ function MeetSomeoneGame({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div>
-      <button onClick={onBack} className="text-sm mb-6 cursor-pointer" style={{ color: 'var(--color-text-muted)' }}>
+    <div className="space-y-6">
+      <button onClick={onBack} className="text-xs uppercase tracking-[0.2em] mb-4 cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)]">
         ← Back to Games
       </button>
 
-      <h2 className="text-2xl mb-4 text-center" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}>
-        🤝 Meet Someone New
+      <h2 className="text-3xl font-light text-center text-[var(--color-ink)] font-[family-name:var(--font-display)]">
+        Meet Someone New
       </h2>
-      <p className="text-sm text-center mb-8" style={{ color: 'var(--color-text-muted)' }}>
-        Get randomly paired with another guest and start a conversation!
+      <p className="text-sm text-center text-[var(--color-dust)] max-w-sm mx-auto">
+        Get randomly paired with another guest and start a conversation.
       </p>
 
       {matchedGuests.length > 0 && prompt ? (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-4 mb-6"
+          className="space-y-4"
         >
-          <div className="flex gap-3 justify-center">
+          <div className="flex gap-4 justify-center">
             {matchedGuests.map((g, idx) => (
               <div
                 key={idx}
-                className="flex-1 p-4 rounded-2xl text-center"
-                style={{ background: 'var(--color-cream)' }}
+                className="flex-1 p-5 border border-[var(--color-dust)] rounded-[4px] text-center bg-[var(--color-cream)]"
               >
-                <span className="text-2xl block mb-1">👤</span>
-                <p className="text-sm font-medium" style={{ color: 'var(--color-brown)' }}>{g.name}</p>
-                <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Matched Guest</p>
+                <p className="text-xs uppercase tracking-wider text-[var(--color-dust)] mb-1">Guest</p>
+                <p className="text-sm font-medium text-[var(--color-ink)]">{g.name}</p>
               </div>
             ))}
           </div>
 
           <div
-            className="p-6 rounded-2xl text-center"
-            style={{ background: 'var(--color-cream)', border: '1px solid rgba(93, 64, 55, 0.06)' }}
+            className="p-6 rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)] text-center space-y-2"
           >
-            <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--color-text-muted)' }}>
-              Your Conversation Starter
+            <p className="text-[10px] uppercase tracking-widest text-[var(--color-dust)]">
+              Conversation Starter
             </p>
             <p
-              className="text-lg italic"
-              style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
+              className="text-lg italic font-[family-name:var(--font-display)] text-[var(--color-ink)] font-light"
             >
               "{prompt}"
             </p>
@@ -262,20 +227,13 @@ function MeetSomeoneGame({ onBack }: { onBack: () => void }) {
         </motion.div>
       ) : null}
 
-      <motion.button
-        whileHover={{ scale: 1.03 }}
-        whileTap={{ scale: 0.97 }}
+      <button
         onClick={matchMe}
         disabled={isLoading}
-        className="w-full py-4 rounded-xl text-sm font-medium cursor-pointer disabled:opacity-50"
-        style={{
-          background: 'var(--color-brown)',
-          color: 'var(--color-cream)',
-          boxShadow: '0 4px 16px rgba(93, 64, 55, 0.15)',
-        }}
+        className="w-full py-4 bg-[var(--color-ink)] text-[var(--color-cream)] rounded-[4px] text-xs uppercase tracking-[0.2em] cursor-pointer hover:bg-[var(--color-ink)]/90 transition-colors disabled:opacity-40"
       >
-        {isLoading ? 'Matching...' : matchedGuests.length > 0 ? 'Match Again 🎲' : 'Match Me ✨'}
-      </motion.button>
+        {isLoading ? 'matching...' : matchedGuests.length > 0 ? 'match again' : 'match me'}
+      </button>
     </div>
   );
 }
@@ -286,11 +244,11 @@ export default function GamesPage() {
   const [activeGame, setActiveGame] = useState<string | null>(null);
 
   const games = [
-    { id: 'quiz', emoji: '🧠', title: 'Who Knows Her Best?', desc: 'Test your knowledge', route: '/quiz' },
-    { id: 'charades', emoji: '🎭', title: 'Dumb Charades', desc: 'Act it out!', route: null },
-    { id: 'nhie', emoji: '🙈', title: 'Never Have I Ever', desc: 'Party-safe edition', route: null },
-    { id: 'meet', emoji: '🤝', title: 'Meet Someone New', desc: 'Make a new friend', route: null },
-    { id: 'guestbook', emoji: '📖', title: 'Guest Book', desc: 'Sign the book', route: '/guestbook' },
+    { id: 'quiz', title: 'Who Knows Her Best?', desc: 'Test your knowledge of the birthday girl.', route: '/quiz' },
+    { id: 'charades', title: 'Dumb Charades', desc: 'Act out Bollywood/Hollywood prompts.', route: null },
+    { id: 'nhie', title: 'Never Have I Ever', desc: 'Read party-safe conversation prompts.', route: null },
+    { id: 'meet', title: 'Meet Someone New', desc: 'Match randomly with other guests.', route: null },
+    { id: 'guestbook', title: 'Guest Book', desc: 'Leave a public signature and note.', route: '/guestbook' },
   ];
 
   const handleGameSelect = (game: typeof games[0]) => {
@@ -302,8 +260,8 @@ export default function GamesPage() {
   };
 
   return (
-    <PageWrapper>
-      <div className="px-6 pt-16 pb-8 max-w-lg mx-auto">
+    <PageWrapper className="bg-[#FAF7F2]">
+      <div className="px-6 pt-20 pb-8 max-w-[860px] mx-auto">
         <AnimatePresence mode="wait">
           {activeGame === 'charades' ? (
             <motion.div key="charades" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -318,50 +276,35 @@ export default function GamesPage() {
               <MeetSomeoneGame onBack={() => setActiveGame(null)} />
             </motion.div>
           ) : (
-            <motion.div key="hub" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center mb-8"
-              >
+            <motion.div key="hub" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-8">
+              <div className="text-center space-y-2">
+                <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
+                  Party activities
+                </span>
                 <h1
-                  className="text-3xl md:text-4xl mb-2"
-                  style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
+                  className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]"
                 >
-                  Party Games 🎉
+                  party games
                 </h1>
-                <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                  Pick a game and let the fun begin.
-                </p>
-              </motion.div>
+              </div>
 
-              <div className="space-y-3">
-                {games.map((game, i) => (
-                  <motion.button
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {games.map((game) => (
+                  <button
                     key={game.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.08 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
                     onClick={() => handleGameSelect(game)}
-                    className="w-full flex items-center gap-4 p-4 rounded-2xl text-left cursor-pointer transition-shadow"
-                    style={{
-                      background: 'var(--color-cream)',
-                      border: '1px solid rgba(93, 64, 55, 0.06)',
-                    }}
+                    className="group w-full flex flex-col text-left p-5 bg-[var(--color-cream)] border-l-[4px] border-[var(--color-sepia)] border-t border-r border-b border-[var(--color-dust)]/20 rounded-[4px] cursor-pointer hover:bg-[var(--color-cream)]/80 transition-colors"
                   >
-                    <span className="text-3xl flex-shrink-0">{game.emoji}</span>
-                    <div>
-                      <p className="text-sm font-medium" style={{ color: 'var(--color-brown)' }}>
+                    <div className="w-full flex items-center justify-between">
+                      <p className="text-base font-light font-[family-name:var(--font-display)] text-[var(--color-ink)] group-hover:text-[var(--color-blush)] transition-colors">
                         {game.title}
                       </p>
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-                        {game.desc}
-                      </p>
+                      <span className="text-sm text-[var(--color-dust)] group-hover:translate-x-1 group-hover:text-[var(--color-blush)] transition-transform">→</span>
                     </div>
-                    <span className="ml-auto text-sm" style={{ color: 'var(--color-accent)' }}>→</span>
-                  </motion.button>
+                    <p className="text-xs text-[var(--color-dust)] mt-1 font-[family-name:var(--font-body)]">
+                      {game.desc}
+                    </p>
+                  </button>
                 ))}
               </div>
             </motion.div>

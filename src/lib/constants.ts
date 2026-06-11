@@ -1,8 +1,13 @@
-// Birthday unlock date: July 5th, 2026 at midnight IST (UTC+5:30)
-export const BIRTHDAY_DATE = new Date('2026-07-05T00:00:00+05:30');
+// Central config — import everywhere, never hardcode inline
+export const CAPSULE_UNLOCK = new Date(Date.UTC(2026, 6, 4, 18, 30, 0)); // July 5 00:00 IST = July 4 18:30 UTC
+export const FUTURE_LETTERS_UNLOCK = new Date(Date.UTC(2027, 6, 4, 18, 30, 0)); // July 5 00:00 IST (next year) = July 4 18:30 UTC
 
-// Next year for future letters
-export const NEXT_BIRTHDAY_DATE = new Date('2027-07-05T00:00:00+05:30');
+export const isCapsuleUnlocked = () => new Date().getTime() >= CAPSULE_UNLOCK.getTime();
+export const isFutureLettersUnlocked = () => new Date().getTime() >= FUTURE_LETTERS_UNLOCK.getTime();
+
+// Compatibility wrappers
+export const BIRTHDAY_DATE = CAPSULE_UNLOCK;
+export const NEXT_BIRTHDAY_DATE = FUTURE_LETTERS_UNLOCK;
 
 // Timeline chapters
 export const TIMELINE_CHAPTERS = [
