@@ -41,6 +41,66 @@ export default function GuestbookPage() {
     fetchEntries();
   }, [fetchEntries]);
 
+  const mode = localStorage.getItem('mode');
+
+  if (mode === 'birthday_girl') {
+    if (isLocked) {
+      return (
+        <PageWrapper className="bg-[#FAF7F2]">
+          <div className="film-grain pointer-events-none fixed inset-0 z-40" />
+          <div className="px-6 pt-24 pb-12 max-w-md mx-auto min-h-[80vh] flex flex-col items-center justify-center text-center space-y-6">
+            <h1 className="text-3xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]">
+              sealed guestbook
+            </h1>
+            <p className="text-sm text-[var(--color-dust)] font-[family-name:var(--font-body)] leading-relaxed">
+              The guest registry is sealed until your birthday morning.
+            </p>
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-blush)] font-medium">
+              Locked until July 5
+            </p>
+          </div>
+        </PageWrapper>
+      );
+    } else {
+      return (
+        <PageWrapper className="bg-[#FAF7F2]">
+          <div className="film-grain pointer-events-none fixed inset-0 z-40" />
+          <div className="px-6 pt-24 pb-12 max-w-[860px] mx-auto space-y-8">
+            <div className="text-center space-y-2">
+              <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
+                Revealed
+              </span>
+              <h1 className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
+                guestbook signatures
+              </h1>
+            </div>
+            
+            <div className="space-y-4 pt-8">
+              {entries.map((entry, i) => (
+                <div
+                  key={entry.id}
+                  className="p-5 rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)]"
+                  style={{ transform: `rotate(${-0.5 + (i * 0.3) % 1}deg)` }}
+                >
+                  <p className="text-base leading-relaxed text-[var(--color-ink)] font-light italic font-[family-name:var(--font-display)]">
+                    "{entry.message}"
+                  </p>
+                  <div className="flex items-center justify-between mt-4 text-[var(--color-dust)] border-t border-[var(--color-dust)]/10 pt-3 text-[10px] uppercase tracking-[0.1em]">
+                    <span>— {entry.guest_name || 'Anonymous'}</span>
+                    <span className="tabular-nums">{new Date(entry.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {entries.length === 0 && (
+              <p className="text-center text-sm text-[var(--color-dust)] italic">No signatures found.</p>
+            )}
+          </div>
+        </PageWrapper>
+      );
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;

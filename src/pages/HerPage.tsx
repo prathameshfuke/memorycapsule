@@ -6,12 +6,12 @@ import PageWrapper from '../components/layout/PageWrapper';
 import { useNavigate } from 'react-router-dom';
 
 // Import local photos for the blurred collage background
-import babyImg from '../assets/baby.jpg';
-import angydonImg from '../assets/angydon.jpg';
-import kidImg from '../assets/kid.jpg';
-import landerImg from '../assets/lander.jpg';
-import presentImg from '../assets/present.jpg';
-import latestImg from '../assets/latest.jpg';
+import babyImg from '../assets/baby.png';
+import angydonImg from '../assets/angydon.png';
+import kidImg from '../assets/kid.png';
+import landerImg from '../assets/lander.png';
+import presentImg from '../assets/present.png';
+import latestImg from '../assets/latest.png';
 
 export default function HerPage() {
   const { isLocked } = useBirthdayLock();

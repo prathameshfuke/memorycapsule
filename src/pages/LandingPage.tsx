@@ -5,12 +5,12 @@ import PageWrapper from '../components/layout/PageWrapper';
 import Countdown from '../components/shared/Countdown';
 
 // Import local photos
-import babyImg from '../assets/baby.jpg';
-import angydonImg from '../assets/angydon.jpg';
-import kidImg from '../assets/kid.jpg';
-import landerImg from '../assets/lander.jpg';
-import presentImg from '../assets/present.jpg';
-import latestImg from '../assets/latest.jpg';
+import babyImg from '../assets/baby.png';
+import angydonImg from '../assets/angydon.png';
+import kidImg from '../assets/kid.png';
+import landerImg from '../assets/lander.png';
+import presentImg from '../assets/present.png';
+import latestImg from '../assets/latest.png';
 
 /* ─── Scroll Fade-In Wrapper ─── */
 function FadeInSection({ children, className = '', delay = 0 }: {

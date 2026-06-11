@@ -162,6 +162,77 @@ export default function CameraPage() {
     fetchPhotos();
   }, [fetchPhotos]);
 
+  const mode = localStorage.getItem('mode');
+
+  if (mode === 'birthday_girl') {
+    if (isLocked) {
+      return (
+        <PageWrapper className="bg-[#FAF7F2]">
+          <div className="film-grain pointer-events-none fixed inset-0 z-40" />
+          <div className="px-6 pt-24 pb-12 max-w-md mx-auto min-h-[80vh] flex flex-col items-center justify-center text-center space-y-6">
+            <h1 className="text-3xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]">
+              sealed album
+            </h1>
+            <p className="text-sm text-[var(--color-dust)] font-[family-name:var(--font-body)] leading-relaxed">
+              Photos and videos are being collected in your album. The gallery will unlock on your birthday morning.
+            </p>
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-blush)] font-medium">
+              Locked until July 5
+            </p>
+          </div>
+        </PageWrapper>
+      );
+    } else {
+      return (
+        <PageWrapper className="bg-[#FAF7F2]">
+          <div className="film-grain pointer-events-none fixed inset-0 z-40" />
+          <div className="px-6 pt-24 pb-12 max-w-[860px] mx-auto space-y-8">
+            <div className="text-center space-y-2">
+              <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
+                Revealed
+              </span>
+              <h1 className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
+                shared gallery
+              </h1>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-8">
+              {photos.map((photo, i) => (
+                <div
+                  key={photo.id}
+                  className="polaroid"
+                  style={{ transform: `rotate(${-2 + Math.random() * 4}deg)` }}
+                >
+                  {photo.type === 'video' ? (
+                    <video
+                      src={photo.photo_url}
+                      controls
+                      playsInline
+                      className="w-full aspect-square object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={photo.photo_url}
+                      alt="Memory"
+                      className="w-full aspect-square object-cover"
+                      loading="lazy"
+                    />
+                  )}
+                  <span className="polaroid-caption text-[10px] text-center block pt-1.5 text-[var(--color-dust)]">
+                    {photo.guest_name || 'guest'}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {photos.length === 0 && (
+              <p className="text-center text-sm text-[var(--color-dust)] italic">No shared memories found.</p>
+            )}
+          </div>
+        </PageWrapper>
+      );
+    }
+  }
+
   // Client-side validation helper
   const validateFile = (file: File, type: 'photo' | 'video'): boolean => {
     if (!isRegistered) {

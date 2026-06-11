@@ -42,6 +42,65 @@ export default function MessagesPage() {
     fetchMessages();
   }, [fetchMessages]);
 
+  const mode = localStorage.getItem('mode');
+
+  if (mode === 'birthday_girl') {
+    if (isLocked) {
+      return (
+        <PageWrapper className="bg-[#FAF7F2]">
+          <div className="film-grain pointer-events-none fixed inset-0 z-40" />
+          <div className="px-6 pt-24 pb-12 max-w-md mx-auto min-h-[80vh] flex flex-col items-center justify-center text-center space-y-6">
+            <h1 className="text-3xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]">
+              sealed messages
+            </h1>
+            <p className="text-sm text-[var(--color-dust)] font-[family-name:var(--font-body)] leading-relaxed">
+              This journal is filling up with messages from your favorite people. Everything will be revealed here on your birthday morning.
+            </p>
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-blush)] font-medium">
+              Locked until July 5
+            </p>
+          </div>
+        </PageWrapper>
+      );
+    } else {
+      return (
+        <PageWrapper className="bg-[#FAF7F2]">
+          <div className="film-grain pointer-events-none fixed inset-0 z-40" />
+          <div className="px-6 pt-24 pb-12 max-w-[860px] mx-auto space-y-8">
+            <div className="text-center space-y-2">
+              <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
+                Revealed
+              </span>
+              <h1 className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
+                notes for you
+              </h1>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-8">
+              {messages.map((msg, i) => (
+                <div
+                  key={msg.id}
+                  className="p-5 rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)]"
+                  style={{ transform: `rotate(${-1 + Math.random() * 2}deg)` }}
+                >
+                  <p className="text-base leading-relaxed text-[var(--color-ink)] font-light italic font-[family-name:var(--font-display)]">
+                    "{msg.message}"
+                  </p>
+                  <p className="text-xs mt-3 text-right text-[var(--color-dust)] uppercase tracking-[0.05em]">
+                    — {msg.guest_name || 'Anonymous'}
+                  </p>
+                </div>
+              ))}
+            </div>
+            {messages.length === 0 && (
+              <p className="text-center text-sm text-[var(--color-dust)] italic">No notes found.</p>
+            )}
+          </div>
+        </PageWrapper>
+      );
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageText.trim() || messageText.trim().length < 10) return;

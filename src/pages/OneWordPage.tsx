@@ -97,6 +97,50 @@ export default function OneWordPage() {
     fetchWords();
   }, [fetchWords]);
 
+  const mode = localStorage.getItem('mode');
+
+  if (mode === 'birthday_girl') {
+    if (isLocked) {
+      return (
+        <PageWrapper className="bg-[#1A1614]">
+          <div className="film-grain pointer-events-none fixed inset-0 z-40" />
+          <div className="ink-vignette absolute inset-0 z-10 pointer-events-none" />
+          <div className="relative z-20 px-6 pt-24 pb-12 max-w-md mx-auto min-h-[80vh] flex flex-col items-center justify-center text-center space-y-6 text-[#FAF7F2]">
+            <h1 className="text-3xl font-light font-[family-name:var(--font-display)] text-[#FAF7F2]">
+              sealed words
+            </h1>
+            <p className="text-sm text-[var(--color-dust)] font-[family-name:var(--font-body)] leading-relaxed">
+              A cloud of words is forming for you. You'll see how everyone describes you on your birthday.
+            </p>
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-blush)] font-medium">
+              Locked until July 5
+            </p>
+          </div>
+        </PageWrapper>
+      );
+    } else {
+      return (
+        <PageWrapper className="bg-[#FAF7F2]">
+          <div className="film-grain pointer-events-none fixed inset-0 z-40" />
+          <div className="px-6 pt-24 pb-12 max-w-[860px] mx-auto space-y-8">
+            <div className="text-center space-y-2">
+              <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
+                Revealed
+              </span>
+              <h1 className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
+                in their words
+              </h1>
+            </div>
+            
+            <div className="rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)] pt-8">
+              <WordCloud words={words} />
+            </div>
+          </div>
+        </PageWrapper>
+      );
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputWord.trim()) return;
