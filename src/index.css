@@ -1,0 +1,320 @@
+@import "tailwindcss";
+
+/* ─── Design Tokens ─── */
+@theme {
+  --color-bg: #faf7f2;
+  --color-cream: #f4efe6;
+  --color-brown: #5d4037;
+  --color-brown-light: #7b5e50;
+  --color-text: #2e2e2e;
+  --color-text-muted: #6b6560;
+  --color-accent: #d4a373;
+  --color-accent-light: #e8c9a0;
+  --color-accent-dark: #b8864f;
+  --color-film-shadow: rgba(93, 64, 55, 0.08);
+  --color-white: #ffffff;
+  --color-lock-bg: #f0ebe3;
+  --color-success: #6b8f71;
+  --color-error: #c0392b;
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-handwritten: 'Caveat', cursive;
+}
+
+/* ─── Base Styles ─── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+/* ─── Typography ─── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  color: var(--color-brown);
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+/* ─── Film Grain Overlay ─── */
+.film-grain {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .film-grain {
+    display: none;
+  }
+}
+
+/* ─── Polaroid Card ─── */
+.polaroid {
+  background: var(--color-white);
+  padding: 12px 12px 40px 12px;
+  box-shadow:
+    0 2px 8px var(--color-film-shadow),
+    0 8px 24px rgba(93, 64, 55, 0.06);
+  position: relative;
+}
+
+.polaroid img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.polaroid-caption {
+  font-family: var(--font-handwritten);
+  font-size: 1.1rem;
+  color: var(--color-brown);
+  text-align: center;
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  right: 12px;
+}
+
+/* ─── Tape Decoration ─── */
+.tape {
+  position: absolute;
+  width: 80px;
+  height: 24px;
+  background: rgba(212, 163, 115, 0.35);
+  z-index: 2;
+}
+
+.tape-top {
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+}
+
+.tape-corner {
+  top: -8px;
+  right: -8px;
+  transform: rotate(35deg);
+  width: 60px;
+  height: 20px;
+}
+
+/* ─── Scrapbook Paper ─── */
+.scrapbook-paper {
+  background: var(--color-cream);
+  border: 1px solid rgba(93, 64, 55, 0.08);
+  position: relative;
+}
+
+.scrapbook-paper::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px dashed rgba(93, 64, 55, 0.1);
+  pointer-events: none;
+}
+
+/* ─── Photo Corners ─── */
+.photo-corners {
+  position: relative;
+}
+
+.photo-corners::before,
+.photo-corners::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: var(--color-accent);
+  border-style: solid;
+}
+
+.photo-corners::before {
+  top: -2px;
+  left: -2px;
+  border-width: 2px 0 0 2px;
+}
+
+.photo-corners::after {
+  bottom: -2px;
+  right: -2px;
+  border-width: 0 2px 2px 0;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent-light);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: var(--color-accent-light);
+  color: var(--color-brown);
+}
+
+/* ─── Focus ─── */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ─── Lock Keyhole Glow ─── */
+@keyframes keyholeGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(212, 163, 115, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(212, 163, 115, 0.6));
+  }
+}
+
+.keyhole-glow {
+  animation: keyholeGlow 3s ease-in-out infinite;
+}
+
+/* ─── Floating Animation ─── */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(var(--float-rotate, 0deg));
+  }
+  50% {
+    transform: translateY(-10px) rotate(var(--float-rotate, 0deg));
+  }
+}
+
+.float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* ─── Particle Float ─── */
+@keyframes particleFloat {
+  0% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(var(--drift, 20px)) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* ─── Handwritten Underline ─── */
+.handwritten-underline {
+  position: relative;
+  display: inline-block;
+}
+
+.handwritten-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: -4px;
+  right: -4px;
+  height: 8px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--color-accent-light) 15%,
+    var(--color-accent-light) 85%,
+    transparent 100%
+  );
+  opacity: 0.5;
+  border-radius: 4px;
+  transform: rotate(-0.5deg);
+}
+
+/* ─── Page Transitions ─── */
+.page-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+/* ─── Word Cloud ─── */
+@keyframes wordDrift {
+  0%, 100% {
+    transform: translate(0, 0) rotate(var(--word-rotate, 0deg));
+  }
+  25% {
+    transform: translate(var(--drift-x, 5px), var(--drift-y, -5px)) rotate(var(--word-rotate, 0deg));
+  }
+  50% {
+    transform: translate(calc(var(--drift-x, 5px) * -0.5), calc(var(--drift-y, -5px) * 1.5)) rotate(var(--word-rotate, 0deg));
+  }
+  75% {
+    transform: translate(calc(var(--drift-x, 5px) * 0.8), calc(var(--drift-y, -5px) * -0.3)) rotate(var(--word-rotate, 0deg));
+  }
+}
+
+/* ─── Confetti ─── */
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.confetti-piece {
+  position: fixed;
+  top: 0;
+  z-index: 9998;
+  width: 10px;
+  height: 10px;
+  animation: confettiFall var(--fall-duration, 3s) ease-in forwards;
+  animation-delay: var(--fall-delay, 0s);
+}
