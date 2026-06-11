@@ -179,7 +179,8 @@ function MeetSomeoneGame({ onBack }: { onBack: () => void }) {
       if (isSupabaseConfigured()) {
         const { data } = await supabase.from('one_word').select('guest_name');
         if (data && data.length > 0) {
-          const names = Array.from(new Set(data.map(item => item.guest_name).filter(Boolean)));
+          const typedData = data as { guest_name: string }[];
+          const names = Array.from(new Set(typedData.map(item => item.guest_name).filter(Boolean)));
           if (names.length >= 2) {
             const shuffled = [...names].sort(() => Math.random() - 0.5);
             setMatchedGuests([{ name: shuffled[0] }, { name: shuffled[1] }]);
