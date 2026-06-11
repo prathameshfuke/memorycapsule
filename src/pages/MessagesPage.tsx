@@ -107,21 +107,21 @@ export default function MessagesPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="text-center py-12 rounded-2xl"
-              style={{ background: 'var(--color-cream)' }}
+              style={{
+                background: 'var(--color-cream)',
+                border: '1px solid rgba(93, 64, 55, 0.08)',
+              }}
             >
-              <span className="text-4xl block mb-3">💌</span>
-              <p
-                className="text-xl"
-                style={{ fontFamily: 'var(--font-handwritten)', color: 'var(--color-brown)' }}
-              >
-                Your words are safe with us.
-              </p>
-              <p className="text-xs mt-3" style={{ color: 'var(--color-text-muted)' }}>
-                She'll read it on her birthday morning.
+              <span className="text-4xl block mb-3">✨</span>
+              <h3 className="text-lg font-medium mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}>
+                Added to Birthday Capsule
+              </h3>
+              <p className="text-xs max-w-xs mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
+                Your contribution has been safely stored and will be revealed on July 5.
               </p>
               <button
                 onClick={() => setHasSubmitted(false)}
-                className="mt-6 text-xs underline cursor-pointer"
+                className="text-xs underline cursor-pointer"
                 style={{ color: 'var(--color-text-muted)' }}
               >
                 Write another message

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGuest } from '../hooks/useGuest';
+import { useBirthdayLock } from '../hooks/useBirthdayLock';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { OneWord } from '../types/database';
 import PageWrapper from '../components/layout/PageWrapper';
@@ -65,34 +66,24 @@ function WordCloud({ words }: { words: OneWord[] }) {
 
 export default function OneWordPage() {
   const { guestName, isRegistered, setShowRegistration } = useGuest();
+  const { isLocked } = useBirthdayLock();
   const [words, setWords] = useState<OneWord[]>([]);
   const [inputWord, setInputWord] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const fetchWords = useCallback(async () => {
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && !isLocked) {
       const { data } = await supabase
         .from('one_word')
         .select('*')
         .order('created_at', { ascending: true });
       if (data) setWords(data as unknown as OneWord[]);
     }
-  }, []);
+  }, [isLocked]);
 
   useEffect(() => {
     fetchWords();
-
-    // Realtime subscription
-    if (isSupabaseConfigured()) {
-      const channel = supabase
-        .channel('one_word_changes')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'one_word' }, () => {
-          fetchWords();
-        })
-        .subscribe();
-      return () => { supabase.removeChannel(channel); };
-    }
   }, [fetchWords]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -150,20 +141,22 @@ export default function OneWordPage() {
           </p>
         </motion.div>
 
-        {/* Word Cloud */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="rounded-2xl p-4 mb-8"
-          style={{
-            background: 'var(--color-cream)',
-            border: '1px solid rgba(93, 64, 55, 0.06)',
-            minHeight: '250px',
-          }}
-        >
-          <WordCloud words={words} />
-        </motion.div>
+        {/* Word Cloud (Only visible after unlock) */}
+        {!isLocked && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="rounded-2xl p-4 mb-8"
+            style={{
+              background: 'var(--color-cream)',
+              border: '1px solid rgba(93, 64, 55, 0.06)',
+              minHeight: '250px',
+            }}
+          >
+            <WordCloud words={words} />
+          </motion.div>
+        )}
 
         {/* Input */}
         <AnimatePresence mode="wait">
@@ -172,18 +165,22 @@ export default function OneWordPage() {
               key="thanks"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center py-6"
+              className="text-center py-12 rounded-2xl"
+              style={{
+                background: 'var(--color-cream)',
+                border: '1px solid rgba(93, 64, 55, 0.08)',
+              }}
             >
               <span className="text-3xl block mb-2">✨</span>
-              <p
-                className="text-lg"
-                style={{ fontFamily: 'var(--font-handwritten)', color: 'var(--color-brown)' }}
-              >
-                Beautiful choice.
+              <h3 className="text-lg font-medium mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}>
+                Added to Birthday Capsule
+              </h3>
+              <p className="text-xs max-w-xs mx-auto mb-4" style={{ color: 'var(--color-text-muted)' }}>
+                Your contribution has been safely stored and will be revealed on July 5.
               </p>
               <button
                 onClick={() => setHasSubmitted(false)}
-                className="mt-4 text-xs underline cursor-pointer"
+                className="text-xs underline cursor-pointer"
                 style={{ color: 'var(--color-text-muted)' }}
               >
                 Add another word

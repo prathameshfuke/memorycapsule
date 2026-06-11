@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGuest } from '../hooks/useGuest';
+import { useBirthdayLock } from '../hooks/useBirthdayLock';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { QUIZ_QUESTIONS } from '../lib/constants';
 import type { QuizScore } from '../types/database';
@@ -9,6 +10,7 @@ import Confetti from '../components/shared/Confetti';
 
 export default function QuizPage() {
   const { guestName, isRegistered, setShowRegistration } = useGuest();
+  const { isLocked } = useBirthdayLock();
   const [currentQ, setCurrentQ] = useState(0);
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState<number | null>(null);
@@ -18,7 +20,7 @@ export default function QuizPage() {
   const [started, setStarted] = useState(false);
 
   const fetchLeaderboard = useCallback(async () => {
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && !isLocked) {
       const { data } = await supabase
         .from('quiz_scores')
         .select('*')
@@ -26,7 +28,7 @@ export default function QuizPage() {
         .limit(10);
       if (data) setLeaderboard(data as QuizScore[]);
     }
-  }, []);
+  }, [isLocked]);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -122,8 +124,8 @@ export default function QuizPage() {
                 Start Quiz ✨
               </motion.button>
 
-              {/* Leaderboard */}
-              {leaderboard.length > 0 && (
+              {/* Leaderboard (Only visible after unlock) */}
+              {!isLocked && leaderboard.length > 0 && (
                 <div className="mt-12">
                   <h3
                     className="text-lg mb-4"

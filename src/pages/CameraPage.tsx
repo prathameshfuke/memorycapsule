@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGuest } from '../hooks/useGuest';
+import { useBirthdayLock } from '../hooks/useBirthdayLock';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { PHOTO_FILTERS } from '../lib/constants';
 import type { Photo } from '../types/database';
@@ -196,6 +197,7 @@ function FilterPreview({ imageSrc, onUpload, onBack }: {
 /* ─── Camera Page ─── */
 export default function CameraPage() {
   const { guestName, isRegistered, setShowRegistration } = useGuest();
+  const { isLocked } = useBirthdayLock();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -208,14 +210,14 @@ export default function CameraPage() {
   const videoCameraInputRef = useRef<HTMLInputElement>(null);
 
   const fetchPhotos = useCallback(async () => {
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && !isLocked) {
       const { data } = await supabase
         .from('photos')
         .select('*')
         .order('created_at', { ascending: false });
       if (data) setPhotos(data as Photo[]);
     }
-  }, []);
+  }, [isLocked]);
 
   useEffect(() => {
     fetchPhotos();
@@ -410,10 +412,18 @@ export default function CameraPage() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="mb-4 p-3 rounded-xl text-center text-sm"
-                    style={{ background: 'rgba(107, 143, 113, 0.1)', color: 'var(--color-success)' }}
+                    className="mb-6 p-5 rounded-2xl text-center shadow-sm"
+                    style={{
+                      background: 'var(--color-cream)',
+                      border: '1px solid rgba(107, 143, 113, 0.3)',
+                    }}
                   >
-                    ✨ Memory captured!
+                    <h3 className="text-sm font-semibold text-[var(--color-success)] mb-1">
+                      Added to Birthday Capsule ✨
+                    </h3>
+                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                      Your contribution has been safely stored and will be revealed on July 5.
+                    </p>
                   </motion.div>
                 )}
                 {errorMessage && (
@@ -536,16 +546,18 @@ export default function CameraPage() {
                 className="hidden"
               />
 
-              {/* Gallery */}
-              <div>
-                <h3
-                  className="text-lg mb-4"
-                  style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
-                >
-                  Tonight's Memories
-                </h3>
-                <PhotoGallery photos={photos} />
-              </div>
+              {/* Gallery (Only visible after unlock) */}
+              {!isLocked && (
+                <div>
+                  <h3
+                    className="text-lg mb-4"
+                    style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
+                  >
+                    Tonight's Memories
+                  </h3>
+                  <PhotoGallery photos={photos} />
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

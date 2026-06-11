@@ -6,6 +6,9 @@ import FilmGrain from './components/layout/FilmGrain';
 import Navigation from './components/layout/Navigation';
 import GuestRegistration from './components/guest/GuestRegistration';
 import LandingPage from './pages/LandingPage';
+import GuestDashboardPage from './pages/GuestDashboardPage';
+import HerPage from './pages/HerPage';
+import AdminPage from './pages/AdminPage';
 import OneWordPage from './pages/OneWordPage';
 import MessagesPage from './pages/MessagesPage';
 import CameraPage from './pages/CameraPage';
@@ -39,6 +42,9 @@ function AppContent() {
         <AnimatePresence mode="wait">
           <Routes>
             <Route path="/" element={<LandingPage />} />
+            <Route path="/guest" element={<GuestDashboardPage />} />
+            <Route path="/her" element={<HerPage />} />
+            <Route path="/admin" element={<AdminPage />} />
             <Route path="/one-word" element={<OneWordPage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/camera" element={<CameraPage />} />

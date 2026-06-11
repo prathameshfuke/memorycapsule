@@ -1,26 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useGuest } from '../hooks/useGuest';
+import { useBirthdayLock } from '../hooks/useBirthdayLock';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { GuestbookEntry } from '../types/database';
 import PageWrapper from '../components/layout/PageWrapper';
 
 export default function GuestbookPage() {
   const { guestName, isRegistered, setShowRegistration } = useGuest();
+  const { isLocked } = useBirthdayLock();
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const fetchEntries = useCallback(async () => {
-    if (isSupabaseConfigured()) {
+    if (isSupabaseConfigured() && !isLocked) {
       const { data } = await supabase
         .from('guestbook')
         .select('*')
         .order('created_at', { ascending: true });
       if (data) setEntries(data as unknown as GuestbookEntry[]);
     }
-  }, []);
+  }, [isLocked]);
 
   useEffect(() => {
     fetchEntries();
@@ -120,61 +122,66 @@ export default function GuestbookPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-8 mb-10 rounded-2xl"
-            style={{ background: 'var(--color-cream)' }}
+            className="text-center py-12 mb-10 rounded-2xl"
+            style={{
+              background: 'var(--color-cream)',
+              border: '1px solid rgba(93, 64, 55, 0.08)',
+            }}
           >
             <span className="text-3xl block mb-2">✨</span>
-            <p
-              className="text-lg"
-              style={{ fontFamily: 'var(--font-handwritten)', color: 'var(--color-brown)' }}
-            >
-              Signed!
+            <h3 className="text-lg font-medium mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}>
+              Added to Birthday Capsule
+            </h3>
+            <p className="text-xs max-w-xs mx-auto mb-4" style={{ color: 'var(--color-text-muted)' }}>
+              Your contribution has been safely stored and will be revealed on July 5.
             </p>
             <button
               onClick={() => setHasSubmitted(false)}
-              className="mt-3 text-xs underline cursor-pointer"
+              className="text-xs underline cursor-pointer"
               style={{ color: 'var(--color-text-muted)' }}
             >
-              Write another entry
+              Sign again
             </button>
           </motion.div>
         )}
 
-        {/* Entries */}
-        <div className="space-y-4">
-          {entries.map((entry, i) => (
-            <motion.div
-              key={entry.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="p-5 rounded-2xl"
-              style={{
-                background: 'var(--color-cream)',
-                border: '1px solid rgba(93, 64, 55, 0.04)',
-                transform: `rotate(${-0.5 + Math.random()}deg)`,
-              }}
-            >
-              <p
-                className="text-base leading-relaxed"
-                style={{ fontFamily: 'var(--font-handwritten)', color: 'var(--color-brown)' }}
+        {/* Entries (Only visible after unlock) */}
+        {!isLocked && (
+          <div className="space-y-4">
+            {entries.map((entry, i) => (
+              <motion.div
+                key={entry.id}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="p-5 rounded-2xl"
+                style={{
+                  background: 'var(--color-cream)',
+                  border: '1px solid rgba(93, 64, 55, 0.04)',
+                  transform: `rotate(${-0.5 + Math.random()}deg)`,
+                }}
               >
-                "{entry.message}"
-              </p>
-              <div className="flex items-center justify-between mt-3">
                 <p
-                  className="text-lg"
-                  style={{ fontFamily: 'var(--font-handwritten)', color: 'var(--color-accent-dark)' }}
+                  className="text-base leading-relaxed"
+                  style={{ fontFamily: 'var(--font-handwritten)', color: 'var(--color-brown)' }}
                 >
-                  — {entry.guest_name || 'Anonymous'}
+                  "{entry.message}"
                 </p>
-                <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
-                  {new Date(entry.created_at).toLocaleDateString()}
-                </p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+                <div className="flex items-center justify-between mt-3">
+                  <p
+                    className="text-lg"
+                    style={{ fontFamily: 'var(--font-handwritten)', color: 'var(--color-accent-dark)' }}
+                  >
+                    — {entry.guest_name || 'Anonymous'}
+                  </p>
+                  <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
+                    {new Date(entry.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </PageWrapper>
   );

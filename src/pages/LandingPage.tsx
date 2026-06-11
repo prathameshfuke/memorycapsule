@@ -1,41 +1,32 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useGuest } from '../hooks/useGuest';
-import { TIMELINE_CHAPTERS } from '../lib/constants';
 import PageWrapper from '../components/layout/PageWrapper';
 import Countdown from '../components/shared/Countdown';
 
-// Import images — these will be replaced when actual photos are added back
+// Import local photos
 import babyImg from '../assets/baby.jpg';
-import baby2Img from '../assets/baby2.jpg';
-import donImg from '../assets/don.jpg';
-import presentImg from '../assets/present.jpg';
+import angydonImg from '../assets/angydon.jpg';
+import kidImg from '../assets/kid.jpg';
 import landerImg from '../assets/lander.jpg';
+import presentImg from '../assets/present.jpg';
+import latestImg from '../assets/latest.jpg';
 
-const imageMap: Record<string, string> = {
-  'baby.jpg': babyImg,
-  'baby2.jpg': baby2Img,
-  'don.jpg': donImg,
-  'present.jpg': presentImg,
-  'lander.jpg': landerImg,
-};
-
-/* ─── Fade-in on scroll wrapper ─── */
+/* ─── Scroll Fade-In Wrapper ─── */
 function FadeInSection({ children, className = '', delay = 0 }: {
   children: React.ReactNode;
   className?: string;
   delay?: number;
 }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
+  const isInView = useInView(ref, { once: true, margin: '-100px' });
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 50 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 1, delay, ease: [0.25, 1, 0.5, 1] }}
       className={className}
     >
       {children}
@@ -50,101 +41,80 @@ function HeroSection() {
     target: targetRef,
     offset: ['start start', 'end start'],
   });
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
-  const y = useTransform(scrollYProgress, [0, 0.5], [0, 60]);
+  const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+  const scale = useTransform(scrollYProgress, [0, 0.6], [1, 0.95]);
 
   const scrollToJourney = () => {
-    const el = document.getElementById('intro-section');
+    const el = document.getElementById('beginning-section');
     el?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
     <motion.section
       ref={targetRef}
-      style={{ opacity, scale, y }}
-      className="relative min-h-[100dvh] flex flex-col items-center justify-center px-6 overflow-hidden"
+      style={{ opacity, scale }}
+      className="relative min-h-screen flex flex-col items-center justify-center px-6 overflow-hidden py-16"
     >
-      {/* Subtle floating particles */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              width: 4 + Math.random() * 6,
-              height: 4 + Math.random() * 6,
-              background: 'var(--color-accent-light)',
-              opacity: 0.2 + Math.random() * 0.15,
-              left: `${10 + Math.random() * 80}%`,
-              top: `${20 + Math.random() * 60}%`,
-              animation: `float ${5 + Math.random() * 4}s ease-in-out infinite`,
-              animationDelay: `${Math.random() * 3}s`,
-            }}
-          />
-        ))}
-      </div>
+      {/* Decorative corners */}
+      <div className="absolute top-8 left-8 w-12 h-12 border-t border-l border-[var(--color-accent-light)] opacity-40 pointer-events-none" />
+      <div className="absolute top-8 right-8 w-12 h-12 border-t border-r border-[var(--color-accent-light)] opacity-40 pointer-events-none" />
+      <div className="absolute bottom-8 left-8 w-12 h-12 border-b border-l border-[var(--color-accent-light)] opacity-40 pointer-events-none" />
+      <div className="absolute bottom-8 right-8 w-12 h-12 border-b border-r border-[var(--color-accent-light)] opacity-40 pointer-events-none" />
 
-      {/* Hero Image */}
+      {/* Elegant Hero Image Frame */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-        className="relative mb-8"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+        className="relative mb-10 group"
       >
         <div
-          className="w-56 h-56 md:w-72 md:h-72 rounded-full overflow-hidden float"
+          className="w-64 h-80 md:w-80 md:h-[400px] overflow-hidden p-3 bg-white"
           style={{
-            boxShadow: '0 12px 48px rgba(93, 64, 55, 0.15), 0 4px 16px rgba(93, 64, 55, 0.08)',
-            border: '4px solid rgba(244, 239, 230, 0.8)',
+            boxShadow: '0 20px 50px rgba(93, 64, 55, 0.18), 0 5px 15px rgba(93, 64, 55, 0.08)',
+            transform: 'rotate(-1.5deg)',
           }}
         >
           <img
-            src={landerImg}
-            alt="Her beautiful smile"
-            className="w-full h-full object-cover"
+            src={latestImg}
+            alt="Latest Portrait"
+            className="w-full h-full object-cover filter brightness-[1.02] contrast-[0.98]"
           />
         </div>
-        {/* Decorative ring */}
-        <div
-          className="absolute inset-[-8px] rounded-full border border-dashed pointer-events-none"
-          style={{ borderColor: 'rgba(212, 163, 115, 0.25)' }}
-        />
+        {/* Soft shadow accent overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-brown)]/10 to-transparent pointer-events-none" />
       </motion.div>
 
       {/* Headline */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.4 }}
-        className="text-center max-w-md"
+        transition={{ duration: 1, delay: 0.4 }}
+        className="text-center max-w-lg space-y-4"
       >
+        <p className="text-xs uppercase tracking-[0.3em] font-medium" style={{ color: 'var(--color-accent-dark)' }}>
+          🎂 5 July 2026
+        </p>
         <h1
-          className="text-3xl md:text-4xl lg:text-5xl font-medium leading-tight mb-4"
+          className="text-4xl md:text-5xl leading-tight font-light"
           style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
         >
-          Her Story
+          A small celebration
         </h1>
         <p
-          className="text-base md:text-lg leading-relaxed mb-2"
-          style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)' }}
+          className="text-lg md:text-xl font-light italic leading-relaxed"
+          style={{ fontFamily: 'var(--font-handwritten)', color: 'var(--color-brown-light)' }}
         >
-          Some people make memories.
-        </p>
-        <p
-          className="text-base md:text-lg leading-relaxed italic"
-          style={{ color: 'var(--color-brown)', fontFamily: 'var(--font-display)' }}
-        >
-          She somehow became one.
+          for someone who means a lot to all of us.
         </p>
       </motion.div>
 
-      {/* Countdown */}
+      {/* Countdown overlay */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.8, duration: 0.6 }}
-        className="mt-8"
+        transition={{ delay: 0.8, duration: 0.8 }}
+        className="mt-8 scale-90"
       >
         <Countdown />
       </motion.div>
@@ -153,327 +123,203 @@ function HeroSection() {
       <motion.button
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.2, duration: 0.6 }}
+        transition={{ delay: 1.1, duration: 0.8 }}
         onClick={scrollToJourney}
-        className="mt-10 px-8 py-3 rounded-full text-sm font-medium tracking-wide transition-all duration-300 cursor-pointer"
+        className="mt-10 px-10 py-3.5 rounded-full text-xs font-semibold tracking-[0.2em] uppercase transition-all duration-500 cursor-pointer"
         style={{
           background: 'var(--color-brown)',
           color: 'var(--color-cream)',
-          boxShadow: '0 4px 20px rgba(93, 64, 55, 0.2)',
+          boxShadow: '0 8px 30px rgba(93, 64, 55, 0.25)',
         }}
-        whileHover={{ scale: 1.05, boxShadow: '0 6px 24px rgba(93, 64, 55, 0.3)' }}
+        whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.98 }}
       >
-        Begin The Journey
+        Begin
       </motion.button>
-
-      {/* Scroll indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.4 }}
-        transition={{ delay: 2, duration: 0.8 }}
-        className="absolute bottom-8"
-      >
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-          className="w-5 h-8 rounded-full border-2 flex justify-center pt-1.5"
-          style={{ borderColor: 'var(--color-brown-light)' }}
-        >
-          <div
-            className="w-1 h-2 rounded-full"
-            style={{ background: 'var(--color-brown-light)' }}
-          />
-        </motion.div>
-      </motion.div>
     </motion.section>
   );
 }
 
-/* ─── Intro Section ─── */
-function IntroSection() {
-  return (
-    <section id="intro-section" className="px-6 py-20 max-w-lg mx-auto text-center">
-      <FadeInSection>
-        <div
-          className="w-48 h-48 mx-auto mb-8 rounded-2xl overflow-hidden"
-          style={{
-            boxShadow: '0 8px 32px rgba(93, 64, 55, 0.1)',
-            transform: 'rotate(-2deg)',
-          }}
-        >
-          <img src={landerImg} alt="" className="w-full h-full object-cover" />
-        </div>
-      </FadeInSection>
-      <FadeInSection delay={0.2}>
-        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-          No dramatic introductions needed.
-        </p>
-      </FadeInSection>
-      <FadeInSection delay={0.3}>
-        <p className="text-base leading-relaxed mt-4" style={{ color: 'var(--color-text-muted)' }}>
-          If you've met her, you already know.
-        </p>
-      </FadeInSection>
-      <FadeInSection delay={0.4}>
-        <p className="text-base leading-relaxed mt-4" style={{ color: 'var(--color-text-muted)' }}>
-          If you haven't, you'll understand by the end of this page.
-        </p>
-      </FadeInSection>
-    </section>
-  );
-}
-
-/* ─── Timeline Chapter ─── */
-function TimelineChapter({ chapter, index }: {
-  chapter: typeof TIMELINE_CHAPTERS[0];
-  index: number;
+/* ─── Story Section Template ─── */
+function StorySection({
+  id,
+  image,
+  title,
+  caption,
+  style = 'polaroid',
+  rotation = 0,
+}: {
+  id: string;
+  image: string;
+  title: string;
+  caption: string;
+  style?: 'polaroid' | 'scrapbook' | 'film' | 'cinematic';
+  rotation?: number;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-60px' });
-  const isEven = index % 2 === 0;
-
-  const renderPhoto = () => {
-    const imgSrc = imageMap[chapter.image];
-    if (!imgSrc) return null;
-
-    switch (chapter.style) {
+  const renderImage = () => {
+    switch (style) {
       case 'polaroid':
         return (
-          <div className="polaroid mx-auto max-w-[280px]" style={{ transform: `rotate(${isEven ? -2 : 2}deg)` }}>
-            <div className="tape tape-top" />
-            <img src={imgSrc} alt={chapter.title} className="w-full aspect-[3/4] object-cover" />
-            <span className="polaroid-caption">{chapter.subtitle.split('.')[0]}</span>
+          <div
+            className="bg-white p-4 pb-8"
+            style={{
+              boxShadow: '0 15px 35px rgba(93, 64, 55, 0.12), 0 3px 10px rgba(93, 64, 55, 0.05)',
+              transform: `rotate(${rotation}deg)`,
+            }}
+          >
+            <img src={image} alt={title} className="w-full aspect-square object-cover mb-4" />
+            <div className="h-6 w-full bg-[rgba(93,64,55,0.02)] rounded" />
           </div>
         );
       case 'scrapbook':
         return (
-          <div className="scrapbook-paper p-4 mx-auto max-w-[280px]" style={{ transform: `rotate(${isEven ? 1 : -1}deg)` }}>
-            <div className="photo-corners">
-              <img src={imgSrc} alt={chapter.title} className="w-full aspect-[3/4] object-cover" />
-            </div>
+          <div
+            className="p-3 bg-[var(--color-cream)] rounded-sm relative"
+            style={{
+              boxShadow: '0 10px 25px rgba(93, 64, 55, 0.1)',
+              transform: `rotate(${rotation}deg)`,
+            }}
+          >
+            {/* Scrapbook photo tape */}
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-20 h-6 bg-[rgba(212,163,115,0.25)] backdrop-blur-[1px] rotate-[-2deg]" style={{ border: '1px dashed rgba(93, 64, 55, 0.1)' }} />
+            <img src={image} alt={title} className="w-full aspect-[4/3] object-cover rounded-sm" />
           </div>
         );
       case 'film':
         return (
-          <div className="mx-auto max-w-[280px] relative">
-            {/* Film strip border */}
-            <div
-              className="absolute -left-3 top-0 bottom-0 w-6 flex flex-col justify-between py-2"
-              style={{ background: '#1a1a1a' }}
-            >
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="w-3 h-2 mx-auto rounded-sm" style={{ background: '#333' }} />
+          <div className="relative py-4 bg-[#121212] px-6 rounded-md shadow-2xl">
+            {/* Film strip edge markings */}
+            <div className="absolute top-0 bottom-0 left-2 w-2 flex flex-col justify-between py-2">
+              {Array.from({ length: 8 }).map((_, idx) => (
+                <div key={idx} className="w-1.5 h-3 bg-[var(--color-bg)] rounded-sm" />
               ))}
             </div>
-            <div
-              className="absolute -right-3 top-0 bottom-0 w-6 flex flex-col justify-between py-2"
-              style={{ background: '#1a1a1a' }}
-            >
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="w-3 h-2 mx-auto rounded-sm" style={{ background: '#333' }} />
+            <div className="absolute top-0 bottom-0 right-2 w-2 flex flex-col justify-between py-2">
+              {Array.from({ length: 8 }).map((_, idx) => (
+                <div key={idx} className="w-1.5 h-3 bg-[var(--color-bg)] rounded-sm" />
               ))}
             </div>
-            <img
-              src={imgSrc}
-              alt={chapter.title}
-              className="w-full aspect-[3/4] object-cover relative z-10"
-              style={{ filter: 'contrast(1.1) saturate(0.9)' }}
-            />
+            <img src={image} alt={title} className="w-full aspect-[3/2] object-cover grayscale brightness-95" />
           </div>
         );
       case 'cinematic':
         return (
-          <div className="mx-auto max-w-[340px]">
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{
-                boxShadow: '0 20px 60px rgba(93, 64, 55, 0.2), 0 8px 24px rgba(93, 64, 55, 0.1)',
-              }}
-            >
-              <img src={imgSrc} alt={chapter.title} className="w-full aspect-[3/4] object-cover" />
-            </div>
+          <div className="rounded-2xl overflow-hidden shadow-2xl relative group">
+            <img src={image} alt={title} className="w-full aspect-[16/10] object-cover transition-transform duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-brown)]/40 to-transparent" />
           </div>
         );
       default:
-        return null;
+        return <img src={image} alt={title} className="w-full object-cover" />;
     }
   };
 
   return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 60 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 1, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-      className="py-12"
-    >
-      {/* Year label */}
-      <div className="text-center mb-6">
-        <span
-          className="inline-block px-4 py-1 text-xs tracking-[0.2em] uppercase rounded-full"
-          style={{
-            background: 'var(--color-cream)',
-            color: 'var(--color-accent-dark)',
-            border: '1px solid rgba(212, 163, 115, 0.2)',
-          }}
-        >
-          {chapter.year}
-        </span>
-      </div>
-
-      {/* Chapter title */}
-      <h2
-        className="text-2xl md:text-3xl text-center mb-8"
-        style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
-      >
-        {chapter.title}
-      </h2>
-
-      {/* Photo */}
-      <div className="mb-8">{renderPhoto()}</div>
-
-      {/* Caption */}
-      <div className="max-w-sm mx-auto text-center">
-        <p
-          className="text-lg md:text-xl italic leading-relaxed"
-          style={{ fontFamily: 'var(--font-handwritten)', color: 'var(--color-brown)' }}
-        >
-          "{chapter.caption}"
-        </p>
-        <p
-          className="text-sm mt-4 leading-relaxed"
-          style={{ color: 'var(--color-text-muted)' }}
-        >
-          {chapter.subtitle}
-        </p>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ─── Transition Text ─── */
-function TransitionSection() {
-  return (
-    <section className="py-24 px-6">
-      <div className="max-w-md mx-auto text-center">
+    <section id={id} className="min-h-[80vh] flex items-center justify-center py-20 px-6">
+      <div className="w-full max-w-lg space-y-8">
         <FadeInSection>
-          <p
-            className="text-xl md:text-2xl leading-relaxed"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
-          >
-            Time has a strange way of moving.
-          </p>
-        </FadeInSection>
-        <FadeInSection delay={0.3}>
-          <p
-            className="text-base mt-6 leading-relaxed"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            One moment it's old photographs in an album.
-          </p>
-        </FadeInSection>
-        <FadeInSection delay={0.5}>
-          <p
-            className="text-base mt-3 leading-relaxed"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            The next, it's people making new memories together.
-          </p>
-        </FadeInSection>
-        {/* Decorative divider */}
-        <FadeInSection delay={0.7}>
-          <div className="flex items-center justify-center gap-3 mt-10">
-            <div className="w-12 h-px" style={{ background: 'var(--color-accent-light)' }} />
-            <span style={{ color: 'var(--color-accent)' }}>✦</span>
-            <div className="w-12 h-px" style={{ background: 'var(--color-accent-light)' }} />
-          </div>
-        </FadeInSection>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Call to Action Section ─── */
-function CTASection() {
-  const navigate = useNavigate();
-  const { isRegistered, setShowRegistration } = useGuest();
-
-  const handleAction = (path: string) => {
-    if (!isRegistered) {
-      setShowRegistration(true);
-      return;
-    }
-    navigate(path);
-  };
-
-  return (
-    <section className="py-20 px-6">
-      <div className="max-w-md mx-auto text-center">
-        <FadeInSection>
-          <h2
-            className="text-3xl md:text-4xl mb-3"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
-          >
-            Ab Tumhari Baari.
-          </h2>
+          <div className="relative z-10">{renderImage()}</div>
         </FadeInSection>
 
         <FadeInSection delay={0.2}>
-          <p className="text-sm leading-relaxed mt-4" style={{ color: 'var(--color-text-muted)' }}>
-            Everyone here knows her differently.
-          </p>
-          <p className="text-sm leading-relaxed mt-2" style={{ color: 'var(--color-text-muted)' }}>
-            Friend. Family. Classmate. Partner in crime.
-          </p>
-          <p className="text-sm leading-relaxed mt-4" style={{ color: 'var(--color-text-muted)' }}>
-            Leave a memory, a thought, or just one word.
-          </p>
-          <p className="text-sm leading-relaxed mt-2 italic" style={{ color: 'var(--color-brown-light)' }}>
-            Let's see the version of her that exists in everyone else's story.
-          </p>
+          <div className="text-center space-y-4">
+            <h2
+              className="text-2xl md:text-3xl font-medium"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
+            >
+              {title}
+            </h2>
+            <p
+              className="text-base md:text-lg leading-relaxed font-light whitespace-pre-line"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              {caption}
+            </p>
+          </div>
+        </FadeInSection>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Final Reveal Section ─── */
+function FinalRevealSection() {
+  const navigate = useNavigate();
+
+  return (
+    <section className="min-h-screen flex flex-col items-center justify-center py-24 px-6 relative bg-[rgba(93,64,55,0.02)]">
+      {/* Decorative vertical separator */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-24 bg-gradient-to-b from-transparent to-[var(--color-accent-light)]" />
+
+      <div className="w-full max-w-xl text-center space-y-12">
+        <FadeInSection>
+          <div
+            className="w-full aspect-[4/5] md:aspect-square max-w-sm mx-auto p-4 bg-white shadow-2xl"
+            style={{ transform: 'rotate(1deg)' }}
+          >
+            <img src={latestImg} alt="Latest Portrait" className="w-full h-full object-cover" />
+          </div>
         </FadeInSection>
 
-        <FadeInSection delay={0.4}>
-          <div className="mt-10 flex flex-col gap-3">
+        <FadeInSection delay={0.2}>
+          <div className="space-y-4">
+            <p
+              className="text-xl md:text-2xl leading-loose font-light"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
+            >
+              And now,
+            </p>
+            <p
+              className="text-2xl md:text-3xl leading-loose font-medium"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
+            >
+              another year.
+              <br />
+              Another memory.
+              <br />
+              Another chapter.
+            </p>
+          </div>
+        </FadeInSection>
+
+        <FadeInSection delay={0.4} className="pt-6">
+          <div className="flex flex-col gap-4 max-w-xs mx-auto">
+            {/* Play Games Button */}
             <motion.button
-              whileHover={{ scale: 1.03 }}
+              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => handleAction('/one-word')}
-              className="w-full py-3.5 rounded-xl text-sm font-medium tracking-wide transition-all cursor-pointer"
+              onClick={() => navigate('/games')}
+              className="py-4 rounded-xl text-xs font-semibold uppercase tracking-[0.2em] cursor-pointer"
               style={{
                 background: 'var(--color-brown)',
                 color: 'var(--color-cream)',
-                boxShadow: '0 4px 16px rgba(93, 64, 55, 0.15)',
+                boxShadow: '0 4px 15px rgba(93, 64, 55, 0.15)',
               }}
             >
-              💬 Describe her in one word
+              🎮 Play Party Games
             </motion.button>
+
+            {/* Secret Gate Button */}
             <motion.button
-              whileHover={{ scale: 1.03 }}
+              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => handleAction('/messages')}
-              className="w-full py-3.5 rounded-xl text-sm font-medium tracking-wide transition-all cursor-pointer"
+              onClick={() => {
+                const pass = prompt('Enter Guest Access Code:');
+                if (pass === 'oneword') {
+                  localStorage.setItem('guest_authorized', 'true');
+                  navigate('/guest');
+                } else if (pass) {
+                  alert('Incorrect code! Hint: It is "oneword".');
+                }
+              }}
+              className="py-4 rounded-xl text-xs font-semibold uppercase tracking-[0.2em] cursor-pointer"
               style={{
                 background: 'var(--color-cream)',
                 color: 'var(--color-brown)',
                 border: '1px solid rgba(93, 64, 55, 0.12)',
               }}
             >
-              💌 Leave a secret message
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleAction('/camera')}
-              className="w-full py-3.5 rounded-xl text-sm font-medium tracking-wide transition-all cursor-pointer"
-              style={{
-                background: 'var(--color-cream)',
-                color: 'var(--color-brown)',
-                border: '1px solid rgba(93, 64, 55, 0.12)',
-              }}
-            >
-              📸 Add to the album
+              ✨ Enter Guest Area
             </motion.button>
           </div>
         </FadeInSection>
@@ -482,67 +328,64 @@ function CTASection() {
   );
 }
 
-/* ─── Footer ─── */
-function Footer() {
-  return (
-    <footer className="py-16 px-6 text-center relative overflow-hidden">
-      {/* Floating particles */}
-      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              width: 3 + Math.random() * 4,
-              height: 3 + Math.random() * 4,
-              background: 'var(--color-accent-light)',
-              opacity: 0.15,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animation: `float ${6 + Math.random() * 4}s ease-in-out infinite`,
-              animationDelay: `${Math.random() * 3}s`,
-            }}
-          />
-        ))}
-      </div>
-      <FadeInSection>
-        <p
-          className="text-sm"
-          style={{ color: 'var(--color-text-muted)' }}
-        >
-          Made with ❤️ for the most beautiful chapter yet.
-        </p>
-      </FadeInSection>
-    </footer>
-  );
-}
-
-/* ─── Landing Page ─── */
+/* ─── Main Landing Page ─── */
 export default function LandingPage() {
   return (
     <PageWrapper>
+      {/* Film grain layer overlay */}
+      <div className="film-grain pointer-events-none fixed inset-0 z-40 opacity-[0.03]" />
+
       <HeroSection />
-      <IntroSection />
 
-      {/* Timeline */}
-      <section className="px-6">
-        <div className="max-w-lg mx-auto">
-          {/* Vertical line */}
-          <div className="relative">
-            <div
-              className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2"
-              style={{ background: 'linear-gradient(to bottom, transparent, var(--color-accent-light), transparent)' }}
-            />
-            {TIMELINE_CHAPTERS.map((chapter, i) => (
-              <TimelineChapter key={chapter.id} chapter={chapter} index={i} />
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Chapter 1: The Beginning */}
+      <StorySection
+        id="beginning-section"
+        image={babyImg}
+        title="The Beginning"
+        caption={`Every family album has a few photos\nthat somehow survive every cleanup.\n\nThis is one of them.`}
+        style="polaroid"
+        rotation={-2}
+      />
 
-      <TransitionSection />
-      <CTASection />
-      <Footer />
+      {/* Chapter 2: Strong Opinions */}
+      <StorySection
+        id="opinions-section"
+        image={angydonImg}
+        title="Strong Opinions Since Day One"
+        caption={`Some things change with time.\n\nThat look isn't one of them.`}
+        style="scrapbook"
+        rotation={3}
+      />
+
+      {/* Chapter 3: Center Stage */}
+      <StorySection
+        id="stage-section"
+        image={kidImg}
+        title="Center Stage"
+        caption={`School functions.\nDance performances.\nAnnual days.\n\nThe camera somehow always found her.`}
+        style="film"
+      />
+
+      {/* Chapter 4: The Version We Know */}
+      <StorySection
+        id="version-section"
+        image={landerImg}
+        title="The Version We Know"
+        caption={`Somewhere between\nthe old photo albums\nand today,\n\nshe became everyone's favourite person.`}
+        style="scrapbook"
+        rotation={-1.5}
+      />
+
+      {/* Chapter 5: Aaj Kal */}
+      <StorySection
+        id="today-section"
+        image={presentImg}
+        title="Aaj Kal"
+        caption={`A little older.\n\nA little wiser.\n\nStill exactly herself.`}
+        style="cinematic"
+      />
+
+      <FinalRevealSection />
     </PageWrapper>
   );
 }
