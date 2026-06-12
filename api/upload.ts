@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import { Buffer } from 'node:buffer';
 
 const normalizeEnvValue = (value?: string) => value?.trim().replace(/^"(.*)"$/, '$1');
-const supabaseUrl = normalizeEnvValue(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL);
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabaseStorageBucket = process.env.SUPABASE_STORAGE_BUCKET || 'photos';
+type EnvMap = Record<string, string | undefined>;
+const env = ((globalThis as { process?: { env?: EnvMap } }).process?.env ?? {}) as EnvMap;
+const supabaseUrl = normalizeEnvValue(env.SUPABASE_URL || env.VITE_SUPABASE_URL);
+const supabaseServiceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseStorageBucket = env.SUPABASE_STORAGE_BUCKET || 'photos';
 
 const getSupabaseAdminClient = () => {
   if (!supabaseUrl || !supabaseServiceRoleKey) {
@@ -16,6 +19,30 @@ const getSupabaseAdminClient = () => {
       autoRefreshToken: false,
     },
   });
+};
+
+const ensureBucket = async (supabaseAdmin: ReturnType<typeof getSupabaseAdminClient>, bucketName: string) => {
+  if (!supabaseAdmin) {
+    throw new Error('Supabase storage is not configured');
+  }
+
+  const { data: buckets, error: listError } = await supabaseAdmin.storage.listBuckets();
+  if (listError) {
+    throw new Error(`Failed to inspect storage buckets: ${listError.message}`);
+  }
+
+  const existingBucket = buckets.find((bucket) => bucket.name === bucketName);
+  if (existingBucket) {
+    return;
+  }
+
+  const { error: createError } = await supabaseAdmin.storage.createBucket(bucketName, {
+    public: true,
+  });
+
+  if (createError) {
+    throw new Error(`Bucket "${bucketName}" could not be created: ${createError.message}`);
+  }
 };
 
 export default async function handler(req: any, res: any) {
@@ -61,6 +88,8 @@ export default async function handler(req: any, res: any) {
     if (!supabaseAdmin) {
       return res.status(500).json({ error: 'Supabase storage is not configured' });
     }
+
+    await ensureBucket(supabaseAdmin, supabaseStorageBucket);
 
     const storagePath = `${guestName || 'anonymous'}/${Date.now()}-${fileName}`;
     const { error: uploadError } = await supabaseAdmin.storage
