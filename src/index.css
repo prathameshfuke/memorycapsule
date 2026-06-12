@@ -381,6 +381,30 @@ h2, h3, h4, h5, h6 {
   .game-card {
     min-height: 190px;
   }
+
+  .scrapbook-hero-image {
+    height: 54svh;
+  }
+
+  .scrapbook-hero-content {
+    bottom: 20px;
+    left: 16px;
+    right: 16px;
+  }
+
+  .scrapbook-hero-content h1 {
+    font-size: clamp(3.5rem, 21vw, 5.5rem);
+  }
+
+  .story-shell {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .story-copy {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
 }
 
 @media (min-width: 900px) {
@@ -753,6 +777,79 @@ h2, h3, h4, h5, h6 {
   font-size: .95rem;
   line-height: 1.55;
   text-shadow: 0 1px 8px rgba(44, 44, 44, .75);
+}
+
+@media (max-width: 699px) {
+  .scrapbook-hero {
+    min-height: auto;
+  }
+
+  .scrapbook-hero-image {
+    position: relative;
+    width: 100%;
+    height: 58svh;
+    object-fit: cover;
+    object-position: center top;
+  }
+
+  .scrapbook-hero-wash {
+    background:
+      linear-gradient(to bottom, rgba(248, 245, 241, .04) 24%, rgba(44, 44, 44, .10) 58%, rgba(44, 44, 44, .82) 100%),
+      linear-gradient(to right, rgba(248, 245, 241, .10), transparent 60%);
+  }
+
+  .scrapbook-hero-content {
+    bottom: 28px;
+    left: 20px;
+    right: 20px;
+  }
+
+  .scrapbook-hero-content h1 {
+    font-size: clamp(3.8rem, 20vw, 6rem);
+  }
+
+  .scrapbook-hero-content p:not(.scrapbook-kicker) {
+    max-width: 250px;
+    margin-bottom: 20px;
+  }
+
+  .scrapbook-scroll-cue {
+    bottom: 16px;
+    right: 20px;
+  }
+
+  .story-shell {
+    padding: 48px 20px;
+  }
+
+  .story-before .story-shell {
+    min-height: auto;
+    padding-bottom: 56px;
+  }
+
+  .story-heading h2,
+  .wall-title h2,
+  .stage-title h2,
+  .today-title h2 {
+    font-size: clamp(2.5rem, 13vw, 4rem);
+  }
+
+  .baby-polaroid {
+    width: min(100%, 290px);
+    margin: 28px auto 0;
+  }
+
+  .story-copy {
+    position: static;
+    width: 100%;
+    margin-top: 20px;
+    font-size: 1.1rem;
+  }
+
+  .story-copy p + p {
+    margin-left: 0;
+    margin-top: 12px;
+  }
 }
 
 .scrapbook-kicker,

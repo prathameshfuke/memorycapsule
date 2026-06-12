@@ -157,6 +157,9 @@ export function MediaGallery({ photos }: { photos: Photo[] }) {
   );
 }
 
+const MAX_IMAGE_DIMENSION = 1600;
+const IMAGE_QUALITY = 0.82;
+
 /* ─── Main Camera Page ─── */
 export default function CameraPage() {
   const { guestName, isRegistered, setShowRegistration } = useGuest();
@@ -168,10 +171,50 @@ export default function CameraPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [uploadQueue, setUploadQueue] = useState(0); // track multi-upload count
 
   const photoInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+
+  const fileToDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('failed to read image file'));
+      }
+    };
+    reader.onerror = () => reject(new Error('failed to read image file'));
+    reader.readAsDataURL(file);
+  });
+
+  const compressImage = (dataUrl: string) => new Promise<string>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      const scale = Math.min(MAX_IMAGE_DIMENSION / image.width, MAX_IMAGE_DIMENSION / image.height, 1);
+      canvas.width = Math.round(image.width * scale);
+      canvas.height = Math.round(image.height * scale);
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('failed to prepare image for upload'));
+        return;
+      }
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', IMAGE_QUALITY));
+    };
+    image.onerror = () => reject(new Error('failed to prepare image for upload'));
+    image.src = dataUrl;
+  });
+
+  const prepareImageForUpload = async (file: File) => {
+    const dataUrl = await fileToDataUrl(file);
+    return compressImage(dataUrl);
+  };
 
   const fetchPhotos = useCallback(async () => {
     const mode = localStorage.getItem('mode');
@@ -268,17 +311,18 @@ export default function CameraPage() {
       };
       reader.readAsDataURL(file);
     } else {
-      // Multiple files -> upload directly without filter
-      setUploadQueue(files.length);
+      // Multiple files -> compress each image before upload
       Array.from(files).forEach((file, idx) => {
         if (!validateFile(file, 'photo')) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          const dataUrl = reader.result as string;
-          const fileName = `${guestName || 'guest'}_${Date.now()}_${idx}_photo.jpg`;
-          uploadMedia(dataUrl, fileName, file.type || 'image/jpeg', false, 'none');
-        };
-        reader.readAsDataURL(file);
+        prepareImageForUpload(file)
+          .then((dataUrl) => {
+            const fileName = `${guestName || 'guest'}_${Date.now()}_${idx}_photo.jpg`;
+            uploadMedia(dataUrl, fileName, 'image/jpeg', false, 'none');
+          })
+          .catch((err) => {
+            console.error(err);
+            setErrorMessage(err.message || 'failed to prepare image for upload');
+          });
       });
     }
   };
@@ -322,7 +366,12 @@ export default function CameraPage() {
           setIsUploading(false);
         }
       } else {
-        setErrorMessage('failed to upload asset to drive');
+        try {
+          const response = JSON.parse(xhr.responseText);
+          setErrorMessage(response.error || 'failed to upload asset to drive');
+        } catch {
+          setErrorMessage(xhr.responseText || 'failed to upload asset to drive');
+        }
         setIsUploading(false);
       }
     };

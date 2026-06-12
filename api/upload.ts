@@ -1,9 +1,13 @@
 import { google } from 'googleapis';
 import { Readable } from 'stream';
+import { createClient } from '@supabase/supabase-js';
 
 const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseStorageBucket = process.env.SUPABASE_STORAGE_BUCKET || 'photos';
 
 // Initialize Google Drive API
 const getDriveClient = () => {
@@ -17,6 +21,19 @@ const getDriveClient = () => {
     ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive']
   );
   return google.drive({ version: 'v3', auth });
+};
+
+const getSupabaseAdminClient = () => {
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return null;
+  }
+
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 };
 
 export default async function handler(req: any, res: any) {
@@ -59,6 +76,8 @@ export default async function handler(req: any, res: any) {
     }
 
     const drive = getDriveClient();
+    const isImage = fileType.startsWith('image/');
+    const supabaseAdmin = isImage ? getSupabaseAdminClient() : null;
 
     // Create stream from buffer
     const bufferStream = new Readable();
@@ -81,6 +100,7 @@ export default async function handler(req: any, res: any) {
     const driveResponse = await drive.files.create({
       requestBody: fileMetadata,
       media: media,
+      supportsAllDrives: Boolean(folderId),
       fields: 'id, webViewLink, webContentLink',
     });
 
@@ -92,21 +112,40 @@ export default async function handler(req: any, res: any) {
     // Update permissions to make it publicly readable so we can render it in the web app
     await drive.permissions.create({
       fileId,
+      supportsAllDrives: Boolean(folderId),
       requestBody: {
         role: 'reader',
         type: 'anyone',
       },
     });
 
+    let storageUrl = null;
+    if (supabaseAdmin && supabaseStorageBucket) {
+      const storagePath = `${guestName || 'anonymous'}/${Date.now()}-${fileName}`;
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from(supabaseStorageBucket)
+        .upload(storagePath, buffer, {
+          contentType: fileType,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.warn('Supabase storage upload failed:', uploadError.message);
+      } else {
+        const { data } = supabaseAdmin.storage.from(supabaseStorageBucket).getPublicUrl(storagePath);
+        storageUrl = data.publicUrl;
+      }
+    }
+
     // Construct direct rendering link
-    // For images, we can use the uc?id= link
-    // For videos, we can use the drive.google.com/uc?export=download&id= link
     const directUrl = `https://docs.google.com/uc?export=download&id=${fileId}`;
 
     return res.status(200).json({
       success: true,
       fileId,
-      url: directUrl,
+      url: storageUrl || directUrl,
+      driveUrl: directUrl,
+      storageUrl,
       webViewLink: driveResponse.data.webViewLink,
       webContentLink: driveResponse.data.webContentLink,
     });
