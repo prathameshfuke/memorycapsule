@@ -54,7 +54,7 @@ background: var(--cream)
 border: 1px solid var(--dust)
 border-radius: 4px
 padding: 24px
-NO box-shadow
+NO box-shadoww
 
 ### Button component (shared, two variants only)
 Primary: background var(--crimson), text var(--cream), no border

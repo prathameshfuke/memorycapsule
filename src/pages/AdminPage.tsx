@@ -95,7 +95,7 @@ export default function AdminPage() {
 
   return (
     <PageWrapper className="bg-[var(--color-parchment)]">
-      <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-[1100px] mx-auto">
+      <div className="page-container">
         {/* Header */}
         <div className="flex justify-between items-end mb-16">
           <div>

@@ -201,7 +201,7 @@ export default function CameraPage() {
     if (isLocked) {
       return (
         <PageWrapper className="bg-[var(--color-parchment)]">
-          <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-md mx-auto min-h-[80vh] flex flex-col items-center justify-center text-center space-y-6">
+          <div className="sealed-state">
             <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)]">Sealed</span>
             <h1 className="text-3xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]">
               sealed album

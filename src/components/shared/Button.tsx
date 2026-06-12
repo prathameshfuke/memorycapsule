@@ -18,11 +18,11 @@ export default function Button({
   ...rest
 }: ButtonProps) {
   const base =
-    'inline-flex items-center justify-center gap-2 rounded-[4px] text-xs uppercase tracking-[0.2em] font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed';
+    'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-[4px] text-xs uppercase tracking-[0.16em] font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed';
 
   const variants = {
-    primary: 'bg-red text-paper hover:bg-red-deep border border-transparent py-3.5 px-8',
-    ghost: 'bg-transparent border border-charcoal text-ink hover:border-red hover:text-red py-3.5 px-8',
+    primary: 'bg-crimson text-cream hover:bg-ember border border-transparent py-3 px-6',
+    ghost: 'bg-transparent border border-dust text-ink hover:border-crimson hover:text-crimson py-3 px-6',
   };
 
   return (

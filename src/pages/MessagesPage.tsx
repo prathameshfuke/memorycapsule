@@ -45,7 +45,7 @@ export default function MessagesPage() {
     if (isLocked) {
       return (
         <PageWrapper className="bg-[var(--color-parchment)]">
-          <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-md mx-auto min-h-[80vh] flex flex-col items-center justify-center text-center space-y-6">
+          <div className="sealed-state">
             <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)]">
               Sealed
             </span>
@@ -227,7 +227,7 @@ export default function MessagesPage() {
                   className="relative flex-1 rounded-[4px] border border-[var(--color-dust)] p-6 flex flex-col"
                   style={{
                     background: 'var(--color-cream)',
-                    backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, rgba(140, 123, 110, 0.12) 31px, rgba(140, 123, 110, 0.12) 32px)',
+                    backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, rgba(156, 138, 124, 0.18) 31px, rgba(156, 138, 124, 0.18) 32px)',
                   }}
                 >
                   <textarea

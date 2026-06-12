@@ -5,13 +5,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: '#1A1A1A',
-        paper: '#FFF8F2',
-        red: '#E8262A',
-        'red-deep': '#B01E22',
-        blush: '#FFD9D4',
-        charcoal: '#4A4543',
-        gold: '#E8B84B',
+        ink: '#1C1410',
+        paper: '#F7EFE6',
+        cream: '#FBF6EF',
+        crimson: '#C3232B',
+        ember: '#8C4A3A',
+        dust: '#9C8A7C',
+        gold: '#C9A45C',
+        red: '#C3232B',
+        'red-deep': '#8C4A3A',
+        blush: '#C9A45C',
+        charcoal: '#9C8A7C',
       },
       fontFamily: {
         display: ['"Cormorant Garamond"', 'serif'],

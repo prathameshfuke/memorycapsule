@@ -20,16 +20,16 @@ export default function Card({
 }: CardProps) {
   const baseStyles: React.CSSProperties = frosted
     ? {
-        background: 'rgba(26, 22, 20, 0.7)',
+        background: 'rgba(28, 20, 16, 0.86)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid rgba(250, 247, 242, 0.1)',
+        border: '1px solid rgba(156, 138, 124, 0.65)',
         borderRadius: '4px',
         padding: '40px',
       }
     : {
-        background: 'var(--color-paper)',
-        border: '1px solid var(--color-blush)',
+        background: 'var(--color-cream)',
+        border: '1px solid var(--color-dust)',
         borderRadius: '4px',
         padding: '24px',
         boxShadow: 'none',
@@ -41,7 +41,7 @@ export default function Card({
 
   return (
     <Tag
-      className={`${onClick ? 'cursor-pointer text-left w-full' : ''} ${leftBorderClass} ${className}`}
+      className={`app-card ${onClick ? 'app-card-clickable cursor-pointer text-left w-full' : ''} ${leftBorderClass} ${className}`}
       style={baseStyles}
       onClick={onClick}
     >

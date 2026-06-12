@@ -259,7 +259,7 @@ export default function GamesPage() {
   ];
 
   return (
-    <PageWrapper className="bg-[var(--color-ink)]">
+    <PageWrapper className="games-page bg-[var(--color-parchment)]">
       <div className="w-full">
         <AnimatePresence mode="wait">
           {activeGame === 'charades' ? (
@@ -276,8 +276,8 @@ export default function GamesPage() {
             </motion.div>
           ) : (
             <motion.div key="hub" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div className="page-container">
-                <div className="text-center mb-12">
+              <div className="page-container games-hub">
+                <div className="games-heading text-center">
                   <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
                     Play together
                   </span>
@@ -286,16 +286,13 @@ export default function GamesPage() {
                   </h1>
                 </div>
 
-                <div
-                  className="grid gap-6"
-                  style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}
-                >
+                <div className="games-grid grid grid-cols-1 md:grid-cols-3 gap-4">
                   {games.map((game) => (
                     <Card
                       key={game.id}
                       leftBorder
                       onClick={() => setActiveGame(game.id)}
-                      className="group h-full flex flex-col justify-between transition-colors hover:bg-[var(--color-cream)]/80"
+                      className="game-card group h-full flex flex-col justify-between transition-colors"
                     >
                       <div>
                         <h2 className="text-lg font-light font-[family-name:var(--font-display)] text-[var(--color-ink)] group-hover:text-[var(--color-crimson)] transition-colors mb-2">

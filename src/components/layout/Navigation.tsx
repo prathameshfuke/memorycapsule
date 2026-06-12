@@ -9,6 +9,7 @@ interface NavItem {
 
 export default function Navigation() {
   const location = useLocation();
+  const isHome = location.pathname === '/';
 
   const handleLeave = () => {
     // Clear verification codes, modes, and name registrations
@@ -86,13 +87,13 @@ export default function Navigation() {
       initial={{ y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 0.5, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed bottom-0 left-0 right-0 z-50"
+      className="app-navigation fixed bottom-0 left-0 right-0 z-50"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div
-        className="mx-3 mb-3 rounded-[4px] px-2 py-2 flex items-center justify-around"
+        className={`app-navigation-inner mx-3 mb-3 rounded-[4px] px-2 flex items-center justify-around ${isHome ? 'home-navigation py-1.5' : 'py-2'}`}
         style={{
-          background: 'rgba(250, 247, 242, 0.95)', // --cream background
+          background: 'rgba(251, 246, 239, 0.96)',
           border: '1px solid var(--color-dust)',
           boxShadow: 'none',
         }}
@@ -103,13 +104,13 @@ export default function Navigation() {
             <NavLink
               key={item.path}
               to={item.path}
-              className="relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-[4px] transition-colors"
+              className="app-navigation-item relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-[4px] transition-colors"
             >
               {isActive && (
                 <motion.div
                   layoutId="nav-indicator"
                   className="absolute inset-0 rounded-[4px]"
-                  style={{ background: 'rgba(201, 137, 122, 0.15)' }} // --blush background accent
+                  style={{ background: 'rgba(201, 164, 92, 0.18)' }}
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
               )}
@@ -117,7 +118,7 @@ export default function Navigation() {
                 {item.icon}
               </span>
               <span
-                className="text-[10px] font-medium relative z-10 transition-colors uppercase tracking-[0.1em]"
+                className={`${isHome ? 'sr-only' : 'text-[10px]'} font-medium relative z-10 transition-colors uppercase tracking-[0.1em]`}
                 style={{ color: isActive ? 'var(--color-ink)' : 'var(--color-dust)' }}
               >
                 {item.label}
@@ -129,15 +130,15 @@ export default function Navigation() {
         {/* Leave / Sign Out Button */}
         <button
           onClick={handleLeave}
-          className="relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-[4px] cursor-pointer transition-colors"
+          className="app-navigation-item relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-[4px] cursor-pointer transition-colors"
         >
-          <span className="relative z-10 text-[#C9897A]">
+          <span className="relative z-10 text-[var(--color-ember)]">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
             </svg>
           </span>
           <span
-            className="text-[10px] font-medium relative z-10 transition-colors uppercase tracking-[0.1em] text-[#C9897A]"
+            className={`${isHome ? 'sr-only' : 'text-[10px]'} font-medium relative z-10 transition-colors uppercase tracking-[0.1em] text-[var(--color-ember)]`}
           >
             Leave
           </span>

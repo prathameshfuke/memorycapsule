@@ -116,7 +116,7 @@ export default function OneWordPage() {
       return (
         <PageWrapper className="bg-[var(--color-ink)]">
           <div className="ink-vignette absolute inset-0 z-10 pointer-events-none" />
-          <div className="relative z-20 px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-md mx-auto min-h-[80vh] flex flex-col items-center justify-center text-center space-y-6 text-[var(--color-cream)]">
+          <div className="sealed-state sealed-state-dark relative z-20 text-[var(--color-cream)]">
             <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)]">
               Sealed
             </span>

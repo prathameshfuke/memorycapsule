@@ -165,12 +165,12 @@ export default function CapsulePage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative z-30 w-full max-w-[480px] mx-6 flex flex-col items-center text-center text-[var(--color-cream)]"
+            className="locked-capsule-card relative z-30 w-full max-w-[560px] mx-4 flex flex-col items-center text-center text-[var(--color-cream)]"
             style={{
-              background: 'rgba(26, 22, 20, 0.7)',
+              background: 'rgba(28, 20, 16, 0.86)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(250, 247, 242, 0.1)',
+              border: '1px solid rgba(156, 138, 124, 0.65)',
               borderRadius: '4px',
               padding: '40px',
             }}
