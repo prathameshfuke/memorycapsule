@@ -351,7 +351,7 @@ export default function CameraPage() {
             await supabase.from('photos').insert([{
               guest_name: guestName,
               photo_url: uploadResult.url,
-              drive_file_id: uploadResult.fileId,
+              drive_file_id: null,
               filter_used: filterId,
               type: isVideo ? 'video' : 'photo',
             }]);
@@ -368,9 +368,9 @@ export default function CameraPage() {
       } else {
         try {
           const response = JSON.parse(xhr.responseText);
-          setErrorMessage(response.error || 'failed to upload asset to drive');
+          setErrorMessage(response.error || 'failed to upload asset');
         } catch {
-          setErrorMessage(xhr.responseText || 'failed to upload asset to drive');
+          setErrorMessage(xhr.responseText || 'failed to upload asset');
         }
         setIsUploading(false);
       }

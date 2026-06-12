@@ -1,27 +1,9 @@
-import { google } from 'googleapis';
-import { Readable } from 'stream';
 import { createClient } from '@supabase/supabase-js';
 
-const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-const supabaseUrl = process.env.SUPABASE_URL;
+const normalizeEnvValue = (value?: string) => value?.trim().replace(/^"(.*)"$/, '$1');
+const supabaseUrl = normalizeEnvValue(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL);
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabaseStorageBucket = process.env.SUPABASE_STORAGE_BUCKET || 'photos';
-
-// Initialize Google Drive API
-const getDriveClient = () => {
-  if (!privateKey || !clientEmail) {
-    throw new Error('Google service account credentials are not configured');
-  }
-  const auth = new google.auth.JWT(
-    clientEmail,
-    undefined,
-    privateKey,
-    ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive']
-  );
-  return google.drive({ version: 'v3', auth });
-};
 
 const getSupabaseAdminClient = () => {
   if (!supabaseUrl || !supabaseServiceRoleKey) {
@@ -75,79 +57,31 @@ export default async function handler(req: any, res: any) {
       return res.status(413).json({ error: 'File size too large. Limit is 5MB.' });
     }
 
-    const drive = getDriveClient();
-    const isImage = fileType.startsWith('image/');
-    const supabaseAdmin = isImage ? getSupabaseAdminClient() : null;
-
-    // Create stream from buffer
-    const bufferStream = new Readable();
-    bufferStream.push(buffer);
-    bufferStream.push(null);
-
-    // Prepare metadata
-    const fileMetadata = {
-      name: fileName,
-      parents: folderId ? [folderId] : [],
-      description: `Uploaded by ${guestName || 'Anonymous'} via Birthday Memory Capsule`,
-    };
-
-    const media = {
-      mimeType: fileType,
-      body: bufferStream,
-    };
-
-    // Upload to Google Drive
-    const driveResponse = await drive.files.create({
-      requestBody: fileMetadata,
-      media: media,
-      supportsAllDrives: Boolean(folderId),
-      fields: 'id, webViewLink, webContentLink',
-    });
-
-    const fileId = driveResponse.data.id;
-    if (!fileId) {
-      throw new Error('Failed to retrieve file ID from Google Drive response');
+    const supabaseAdmin = getSupabaseAdminClient();
+    if (!supabaseAdmin) {
+      return res.status(500).json({ error: 'Supabase storage is not configured' });
     }
 
-    // Update permissions to make it publicly readable so we can render it in the web app
-    await drive.permissions.create({
-      fileId,
-      supportsAllDrives: Boolean(folderId),
-      requestBody: {
-        role: 'reader',
-        type: 'anyone',
-      },
-    });
+    const storagePath = `${guestName || 'anonymous'}/${Date.now()}-${fileName}`;
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from(supabaseStorageBucket)
+      .upload(storagePath, buffer, {
+        contentType: fileType,
+        upsert: true,
+      });
 
-    let storageUrl = null;
-    if (supabaseAdmin && supabaseStorageBucket) {
-      const storagePath = `${guestName || 'anonymous'}/${Date.now()}-${fileName}`;
-      const { error: uploadError } = await supabaseAdmin.storage
-        .from(supabaseStorageBucket)
-        .upload(storagePath, buffer, {
-          contentType: fileType,
-          upsert: true,
-        });
-
-      if (uploadError) {
-        console.warn('Supabase storage upload failed:', uploadError.message);
-      } else {
-        const { data } = supabaseAdmin.storage.from(supabaseStorageBucket).getPublicUrl(storagePath);
-        storageUrl = data.publicUrl;
-      }
+    if (uploadError) {
+      return res.status(500).json({ error: `Supabase storage upload failed: ${uploadError.message}` });
     }
 
-    // Construct direct rendering link
-    const directUrl = `https://docs.google.com/uc?export=download&id=${fileId}`;
+    const { data } = supabaseAdmin.storage.from(supabaseStorageBucket).getPublicUrl(storagePath);
+    const storageUrl = data.publicUrl;
 
     return res.status(200).json({
       success: true,
-      fileId,
-      url: storageUrl || directUrl,
-      driveUrl: directUrl,
+      fileId: null,
+      url: storageUrl,
       storageUrl,
-      webViewLink: driveResponse.data.webViewLink,
-      webContentLink: driveResponse.data.webContentLink,
     });
   } catch (error: any) {
     console.error('API Upload Error:', error);
