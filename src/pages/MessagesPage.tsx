@@ -64,7 +64,8 @@ export default function MessagesPage() {
     } else {
       return (
         <PageWrapper className="bg-[var(--color-parchment)]">
-          <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-[860px] mx-auto">
+          {/* ─── Unlocked Viewer State ─── */}
+          <div className="page-container">
             <div className="text-center mb-16">
               <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
                 Notes collected
@@ -143,7 +144,7 @@ export default function MessagesPage() {
       {/* Full viewport journal */}
       <div className="min-h-[100dvh] flex flex-col">
         {/* Header area */}
-        <div className="px-6 md:px-8 pt-16 md:pt-24 max-w-[860px] mx-auto w-full">
+      <div className="page-container">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -188,7 +189,7 @@ export default function MessagesPage() {
         </div>
 
         {/* Journal editor area */}
-        <div className="flex-1 flex flex-col px-6 md:px-8 max-w-[860px] mx-auto w-full pb-8">
+      <div className="flex-1 flex flex-col page-container">
           <AnimatePresence mode="wait">
             {hasSubmitted ? (
               <motion.div
@@ -275,7 +276,7 @@ export default function MessagesPage() {
         {/* Viewer mode: note cards grid (after unlock) */}
         {!isLocked && messages.length > 0 && (
           <div className="bg-[var(--color-parchment)] py-16 px-6 md:px-8">
-            <div className="max-w-[860px] mx-auto">
+            <div className="page-container">
               <h2 className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] text-center mb-8">
                 Shared Letters
               </h2>

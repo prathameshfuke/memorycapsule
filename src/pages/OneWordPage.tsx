@@ -135,8 +135,9 @@ export default function OneWordPage() {
       );
     } else {
       return (
+        /* ─── Unlocked State (Admin / Birthday Girl) ─── */
         <PageWrapper className="bg-[var(--color-parchment)]">
-          <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-[860px] mx-auto">
+          <div className="page-container">
             <div className="text-center mb-16">
               <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
                 Revealed
@@ -195,8 +196,7 @@ export default function OneWordPage() {
 
       {/* Centered input — calc height to account for nav */}
       <div
-        className="relative z-20 flex flex-col justify-center px-6 md:px-8 max-w-[860px] mx-auto w-full"
-        style={{ minHeight: 'calc(100dvh - 80px)' }}
+        className="relative z-20 flex flex-col justify-center page-container min-h-[calc(100dvh-80px)]"
       >
         <AnimatePresence mode="wait">
           {hasSubmitted ? (
@@ -256,7 +256,7 @@ export default function OneWordPage() {
       {/* Word Cloud display (after unlock) */}
       {!isLocked && words.length > 0 && (
         <div className="relative z-20 bg-[var(--color-parchment)] border-t border-[var(--color-dust)]/10 py-16 px-6 md:px-8">
-          <div className="max-w-[860px] mx-auto">
+        <div className="page-container">
             <h2 className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] text-center mb-8">
               Word Cloud
             </h2>

@@ -119,12 +119,14 @@ function StoryChapter({
   rotation?: number;
   isEven: boolean;
 }) {
+  const frameClass = "bg-[var(--color-cream)] p-4 border border-[var(--color-ember)] rounded-[4px]";
+
   const renderImage = () => {
     switch (style) {
       case 'polaroid':
         return (
           <div
-            className="bg-[var(--color-cream)] p-4 pb-8 border border-[var(--color-dust)] rounded-[4px]"
+            className={`${frameClass} pb-10`}
             style={{ transform: `rotate(${rotation}deg)` }}
           >
             <img src={image} alt={title} className="w-full object-cover" style={{ aspectRatio: '4/5' }} />
@@ -133,7 +135,7 @@ function StoryChapter({
       case 'scrapbook':
         return (
           <div
-            className="p-3 bg-[var(--color-cream)] border border-[var(--color-dust)] rounded-[4px] relative"
+            className={`${frameClass} relative`}
             style={{ transform: `rotate(${rotation}deg)` }}
           >
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-20 h-6 bg-[rgba(201,137,122,0.15)] border border-dashed border-[var(--color-dust)]/20 rotate-[-2deg]" />
@@ -142,7 +144,7 @@ function StoryChapter({
         );
       case 'film':
         return (
-          <div className="relative py-4 bg-[var(--color-ink)] px-6 rounded-[4px] border border-[var(--color-dust)]">
+          <div className={`${frameClass} relative py-4 bg-[var(--color-ink)] border-[var(--color-dust)]`}>
             <div className="absolute top-0 bottom-0 left-2 w-2 flex flex-col justify-between py-2">
               {Array.from({ length: 8 }).map((_, idx) => (
                 <div key={idx} className="w-1.5 h-3 bg-[var(--color-cream)] rounded-[1px]" />
@@ -158,19 +160,23 @@ function StoryChapter({
         );
       case 'cinematic':
         return (
-          <div className="rounded-[4px] overflow-hidden border border-[var(--color-dust)] relative">
-            <img src={image} alt={title} className="w-full object-cover" style={{ aspectRatio: '4/5' }} />
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-ink)]/40 to-transparent" />
+          <div className={`${frameClass} p-1 overflow-hidden relative`}>
+            <img src={image} alt={title} className="w-full object-cover rounded-[2px]" style={{ aspectRatio: '4/5' }} />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-ink)]/20 to-transparent" />
           </div>
         );
       default:
-        return <img src={image} alt={title} className="w-full object-cover rounded-[4px]" style={{ aspectRatio: '4/5' }} />;
+        return (
+          <div className={frameClass}>
+            <img src={image} alt={title} className="w-full object-cover" style={{ aspectRatio: '4/5' }} />
+          </div>
+        );
     }
   };
 
   return (
-    <section id={id} className="py-12">
-      <div className="w-full max-w-[860px] mx-auto px-6 md:px-8 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
+    <section id={id} className="w-full">
+      <div className="max-w-[860px] mx-auto px-6 md:px-8 grid grid-cols-1 md:grid-cols-2 gap-[48px] items-center">
         {/* Asymmetric layout: alternate ordering on desktop */}
         <FadeInSection className={isEven ? 'md:order-1' : 'md:order-2'} delay={0}>
           <div className="relative z-10">{renderImage()}</div>
@@ -262,7 +268,7 @@ export default function LandingPage() {
       <HeroSection />
 
       {/* 96px gap between chapters */}
-      <div className="bg-[var(--color-parchment)]" style={{ display: 'flex', flexDirection: 'column', gap: '96px', paddingTop: '96px', paddingBottom: '96px' }}>
+      <div className="bg-[var(--color-parchment)] w-full py-24 flex flex-col gap-[96px]">
         <StoryChapter
           id="chapter-01"
           image={babyImg}

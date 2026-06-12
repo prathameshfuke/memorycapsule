@@ -2,25 +2,28 @@
 
 /* ─── Design Tokens ─── */
 @theme {
-  --color-ink: #1A1614;
-  --color-parchment: #F5EFE4;
-  --color-blush: #C9897A;
-  --color-dust: #8C7B6E;
-  --color-sepia: #6B4F3A;
-  --color-cream: #FAF7F2;
+  --color-ink: #1C1410;
+  --color-parchment: #F7EFE6;
+  --color-crimson: #C3232B;
+  --color-ember: #8C4A3A;
+  --color-dust: #9C8A7C;
+  --color-cream: #FBF6EF;
+  --color-gold: #C9A45C;
+  --color-blush: var(--color-crimson); /* Backwards compatibility */
+  --color-sepia: var(--color-ember); /* Backwards compatibility */
 
   --color-bg: var(--color-parchment);
   --color-text: var(--color-ink);
   --color-text-muted: var(--color-dust);
-  --color-accent: var(--color-blush);
-  --color-accent-dark: var(--color-sepia);
-  --color-accent-light: var(--color-blush);
+  --color-accent: var(--color-crimson);
+  --color-accent-dark: var(--color-ember);
+  --color-accent-light: var(--color-crimson);
   --color-brown: var(--color-ink);
   --color-brown-light: var(--color-dust);
   --color-white: var(--color-cream);
   --color-lock-bg: var(--color-ink);
-  --color-success: var(--color-blush);
-  --color-error: var(--color-blush);
+  --color-success: var(--color-crimson);
+  --color-error: var(--color-crimson);
 
   --font-display: 'Cormorant Garamond', serif;
   --font-body: 'DM Sans', sans-serif;
@@ -47,6 +50,7 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  width: 100%;
 }
 
 /* Enforce regular weight on all body text */
@@ -56,6 +60,16 @@ body, p, span, input, textarea, button, select, option, label {
 
 #root {
   min-height: 100dvh;
+  width: 100%;
+}
+
+/* ─── Layout Classes ─── */
+.page-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 96px 24px 64px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* ─── Typography ─── */

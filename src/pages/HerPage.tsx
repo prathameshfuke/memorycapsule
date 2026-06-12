@@ -87,7 +87,7 @@ export default function HerPage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          className="relative z-30 w-full max-w-md mx-6 flex flex-col items-center text-center text-[var(--color-cream)]"
+          className="relative z-30 w-full max-w-[480px] mx-6 flex flex-col items-center text-center text-[var(--color-cream)]"
           style={{
             background: 'rgba(26, 22, 20, 0.7)',
             backdropFilter: 'blur(20px)',
@@ -111,14 +111,14 @@ export default function HerPage() {
                 <span className="block text-[10px] uppercase tracking-[0.1em] text-[var(--color-cream)]/40">
                   {item.label}
                 </span>
-                <span className="text-2xl font-light font-[family-name:var(--font-display)] text-[var(--color-blush)] tabular-nums">
+                <span className="text-2xl font-light font-[family-name:var(--font-display)] text-[var(--color-crimson)] tabular-nums mt-2 block">
                   {isLoading ? '...' : item.count}
                 </span>
               </div>
             ))}
           </div>
 
-          <p className="text-lg italic text-[var(--color-blush)] font-[family-name:var(--font-display)] font-light">
+          <p className="text-lg italic text-[var(--color-crimson)] font-[family-name:var(--font-display)] font-light mt-6">
             Locked until July 5
           </p>
         </motion.div>
@@ -129,7 +129,7 @@ export default function HerPage() {
   // Unlocked State
   return (
     <PageWrapper className="bg-[var(--color-parchment)]">
-      <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-[860px] mx-auto flex flex-col items-center justify-center min-h-[80vh]">
+      <div className="page-container flex flex-col items-center justify-center min-h-[80vh]">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -158,7 +158,7 @@ export default function HerPage() {
               <span className="block text-[10px] uppercase tracking-[0.1em] text-[var(--color-dust)]">
                 {item.label}
               </span>
-              <span className="text-2xl font-light font-[family-name:var(--font-display)] text-[var(--color-blush)] tabular-nums">
+              <span className="text-2xl font-light font-[family-name:var(--font-display)] text-[var(--color-crimson)] tabular-nums mt-2 block">
                 {isLoading ? '...' : item.count}
               </span>
             </div>

@@ -21,10 +21,8 @@ export default function Button({
     'inline-flex items-center justify-center gap-2 rounded-[4px] text-xs uppercase tracking-[0.2em] font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed';
 
   const variants = {
-    primary:
-      'bg-[var(--color-blush)] text-[var(--color-ink)] hover:bg-[var(--color-blush)]/85 py-3.5 px-8',
-    ghost:
-      'bg-transparent border border-[var(--color-dust)] text-[var(--color-ink)] hover:bg-[var(--color-cream)] py-3.5 px-8',
+    primary: 'bg-[var(--color-crimson)] text-[var(--color-cream)] hover:bg-[var(--color-ink)] border border-transparent py-3.5 px-8',
+    ghost: 'bg-transparent border border-[var(--color-dust)] text-[var(--color-dust)] hover:border-[var(--color-ink)] hover:text-[var(--color-ink)] py-3.5 px-8',
   };
 
   return (

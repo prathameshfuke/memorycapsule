@@ -30,17 +30,17 @@ export default function Card({
     : {
         background: 'var(--color-cream)',
         border: '1px solid var(--color-dust)',
-        borderLeft: leftBorder ? '4px solid var(--color-sepia)' : '1px solid var(--color-dust)',
         borderRadius: '4px',
         padding: '24px',
         boxShadow: 'none',
       };
 
   const Tag = onClick ? 'button' : 'div';
+  const leftBorderClass = leftBorder ? 'border-l-4 border-l-[var(--color-ember)] hover:border-l-[var(--color-crimson)] transition-colors' : '';
 
   return (
     <Tag
-      className={`${onClick ? 'cursor-pointer text-left w-full' : ''} ${className}`}
+      className={`${onClick ? 'cursor-pointer text-left w-full' : ''} ${leftBorderClass} ${className}`}
       style={baseStyles}
       onClick={onClick}
     >

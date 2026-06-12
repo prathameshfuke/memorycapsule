@@ -94,7 +94,7 @@ export default function GuestbookPage() {
     } else {
       return (
         <PageWrapper className="bg-[var(--color-parchment)]">
-          <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-[860px] mx-auto">
+        <div className="page-container">
             <div className="text-center mb-16">
               <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
                 Signed by
@@ -146,7 +146,7 @@ export default function GuestbookPage() {
 
   return (
     <PageWrapper className="bg-[var(--color-parchment)]">
-      <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-[860px] mx-auto">
+      <div className="page-container">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}

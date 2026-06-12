@@ -165,7 +165,7 @@ export default function CapsulePage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative z-30 w-full max-w-md mx-6 flex flex-col items-center text-center text-[var(--color-cream)]"
+            className="relative z-30 w-full max-w-[480px] mx-6 flex flex-col items-center text-center text-[var(--color-cream)]"
             style={{
               background: 'rgba(26, 22, 20, 0.7)',
               backdropFilter: 'blur(20px)',
@@ -193,7 +193,7 @@ export default function CapsulePage() {
                   <span className="block text-[10px] uppercase tracking-[0.1em] text-[var(--color-cream)]/40">
                     {item.label}
                   </span>
-                  <span className="text-2xl font-light font-[family-name:var(--font-display)] text-[var(--color-blush)] tabular-nums">
+                  <span className="text-2xl font-light font-[family-name:var(--font-display)] text-[var(--color-crimson)] tabular-nums mt-2 block">
                     {isLoadingStats ? '...' : item.count}
                   </span>
                 </div>
@@ -204,14 +204,14 @@ export default function CapsulePage() {
               <Countdown />
             </div>
 
-            <p className="text-lg italic text-[var(--color-blush)] font-[family-name:var(--font-display)] font-light">
+            <p className="text-lg italic text-[var(--color-crimson)] font-[family-name:var(--font-display)] font-light mt-6">
               Locked until July 5
             </p>
           </motion.div>
         </div>
       ) : (
         /* ─── Unlocked State: Sectioned Reveal ─── */
-        <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-[860px] mx-auto">
+        <div className="page-container">
           {/* Page Header */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -221,7 +221,7 @@ export default function CapsulePage() {
             <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
               The capsule
             </span>
-            <h1 className="text-4xl md:text-5xl font-light leading-tight text-[var(--color-ink)] font-[family-name:var(--font-display)]">
+            <h1 className="text-4xl md:text-5xl font-light leading-[1.1] text-[var(--color-ink)] font-[family-name:var(--font-display)]">
               {totalMemories} memories, waiting no longer
             </h1>
             <p className="text-sm text-[var(--color-dust)] max-w-sm mx-auto mt-4">

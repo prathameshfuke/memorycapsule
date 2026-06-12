@@ -259,8 +259,8 @@ export default function GamesPage() {
   ];
 
   return (
-    <PageWrapper className="bg-[var(--color-parchment)]">
-      <div className="pt-16 md:pt-24 pb-8">
+    <PageWrapper className="bg-[var(--color-ink)]">
+      <div className="w-full">
         <AnimatePresence mode="wait">
           {activeGame === 'charades' ? (
             <motion.div key="charades" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -276,8 +276,8 @@ export default function GamesPage() {
             </motion.div>
           ) : (
             <motion.div key="hub" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div className="max-w-[860px] mx-auto px-6 md:px-8">
-                <div className="text-center mb-16">
+              <div className="page-container">
+                <div className="text-center mb-12">
                   <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
                     Play together
                   </span>
@@ -298,14 +298,14 @@ export default function GamesPage() {
                       className="group h-full flex flex-col justify-between transition-colors hover:bg-[var(--color-cream)]/80"
                     >
                       <div>
-                        <h2 className="text-lg font-light font-[family-name:var(--font-display)] text-[var(--color-ink)] group-hover:text-[var(--color-blush)] transition-colors mb-2">
+                        <h2 className="text-lg font-light font-[family-name:var(--font-display)] text-[var(--color-ink)] group-hover:text-[var(--color-crimson)] transition-colors mb-2">
                           {game.title}
                         </h2>
                         <p className="text-xs text-[var(--color-dust)] leading-relaxed font-[family-name:var(--font-body)]">
                           {game.desc}
                         </p>
                       </div>
-                      <span className="block mt-6 text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] group-hover:text-[var(--color-blush)] transition-colors">
+                      <span className="block mt-6 text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] group-hover:text-[var(--color-crimson)] transition-colors">
                         Play →
                       </span>
                     </Card>

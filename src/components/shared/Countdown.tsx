@@ -8,7 +8,7 @@ export default function Countdown({ className = '' }: { className?: string }) {
       <div className={`text-center ${className}`}>
         <p
           className="text-2xl font-light font-[family-name:var(--font-display)] italic"
-          style={{ color: 'var(--color-blush)' }}
+          style={{ color: 'var(--color-crimson)' }}
         >
           the capsule is open
         </p>

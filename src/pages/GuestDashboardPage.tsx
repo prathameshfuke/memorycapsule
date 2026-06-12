@@ -43,7 +43,7 @@ export default function GuestDashboardPage() {
 
   return (
     <PageWrapper className="bg-[var(--color-parchment)]">
-      <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-[860px] mx-auto">
+      <div className="page-container">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
