@@ -7,8 +7,7 @@ export default function Countdown({ className = '' }: { className?: string }) {
     return (
       <div className={`text-center ${className}`}>
         <p
-          className="text-2xl font-light font-[family-name:var(--font-display)] italic"
-          style={{ color: 'var(--color-crimson)' }}
+          className="text-2xl font-light font-[family-name:var(--font-display)] italic text-red"
         >
           the capsule is open
         </p>
@@ -31,8 +30,8 @@ export default function Countdown({ className = '' }: { className?: string }) {
       {units.map((unit) => (
         <div key={unit.label} className="flex flex-col items-center">
           <span
-            className="font-[family-name:var(--font-display)] text-3xl md:text-4xl tabular-nums text-right w-full"
-            style={{ color: 'inherit', fontWeight: 400 }}
+            className="font-[family-name:var(--font-display)] text-3xl md:text-4xl tabular-nums text-right w-full text-red"
+            style={{ fontWeight: 400 }}
           >
             {String(unit.value).padStart(2, '0')}
           </span>

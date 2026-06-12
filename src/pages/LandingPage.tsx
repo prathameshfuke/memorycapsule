@@ -86,12 +86,9 @@ function HeroSection() {
           </p>
 
           <div className="pt-4">
-            <button
-              onClick={scrollToJourney}
-              className="px-8 py-3 rounded-[4px] text-xs uppercase tracking-[0.2em] cursor-pointer border border-[var(--color-blush)] text-[var(--color-blush)] bg-transparent hover:bg-[var(--color-blush)]/10 transition-colors"
-            >
+            <Button variant="primary" onClick={scrollToJourney}>
               begin
-            </button>
+            </Button>
           </div>
         </motion.div>
       </div>

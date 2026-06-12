@@ -9,7 +9,7 @@ interface ConfettiPiece {
   size: number;
 }
 
-const COLORS = ['#d4a373', '#5d4037', '#e8c9a0', '#f4efe6', '#b8864f', '#7b5e50', '#ff9a9e', '#ffd1dc'];
+const COLORS = ['var(--color-red)', 'var(--color-gold)', 'var(--color-paper)'];
 
 export default function Confetti({ duration = 3000 }: { duration?: number }) {
   const [pieces, setPieces] = useState<ConfettiPiece[]>([]);

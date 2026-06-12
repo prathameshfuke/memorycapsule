@@ -85,7 +85,7 @@ export default function GuestbookPage() {
             <p className="text-sm text-[var(--color-dust)] font-[family-name:var(--font-body)] leading-relaxed">
               The guest registry is sealed until your birthday morning.
             </p>
-            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-blush)]">
+            <p className="text-sm uppercase tracking-[0.2em] font-bold text-red mt-2">
               Locked until July 5
             </p>
           </div>
@@ -178,7 +178,7 @@ export default function GuestbookPage() {
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Write a public note..."
               rows={4}
-              className="w-full px-0 py-4 text-sm outline-none resize-none leading-relaxed caret-[var(--color-blush)] bg-transparent border-b border-[var(--color-dust)] focus:border-[var(--color-blush)] transition-colors"
+              className="w-full px-0 py-4 text-sm outline-none resize-none leading-relaxed caret-red bg-transparent border-b border-[var(--color-dust)] focus:border-[var(--color-blush)] transition-colors"
               style={{
                 color: 'var(--color-ink)',
                 fontFamily: message ? 'var(--font-display)' : 'var(--font-body)',

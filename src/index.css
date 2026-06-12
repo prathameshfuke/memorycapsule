@@ -1,29 +1,83 @@
+:root {
+  --ink: #1A1A1A;
+  --paper: #FFF8F2;
+  --red: #E8262A;
+  --red-deep: #B01E22;
+  --blush: #FFD9D4;
+  --charcoal: #4A4543;
+  --gold: #E8B84B;
+}
+
+/* Backwards-compatibility mappings */
+:root {
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-red: var(--red);
+  --color-red-deep: var(--red-deep);
+  --color-blush: var(--blush);
+  --color-charcoal: var(--charcoal);
+  --color-gold: var(--gold);
+
+  /* Legacy variable mappings to new tokens */
+  --color-cream: var(--paper);
+  --color-parchment: var(--paper);
+  --color-dust: var(--charcoal);
+  --color-crimson: var(--red);
+  --color-ember: var(--red-deep);
+  --color-sepia: var(--charcoal);
+}
+
+html, body, #root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: 'DM Sans', sans-serif;
+  background-color: var(--ink);
+  color: var(--paper);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+h1, h2, h3, .font-display {
+  font-family: 'Cormorant Garamond', serif;
+  line-height: 1.15;
+}
+
 @import "tailwindcss";
 
 /* ─── Design Tokens ─── */
 @theme {
-  --color-ink: #1C1410;
-  --color-parchment: #F7EFE6;
-  --color-crimson: #C3232B;
-  --color-ember: #8C4A3A;
-  --color-dust: #9C8A7C;
-  --color-cream: #FBF6EF;
-  --color-gold: #C9A45C;
-  --color-blush: var(--color-crimson); /* Backwards compatibility */
-  --color-sepia: var(--color-ember); /* Backwards compatibility */
+  --color-ink: #1A1A1A;
+  --color-paper: #FFF8F2;
+  --color-red: #E8262A;
+  --color-red-deep: #B01E22;
+  --color-blush: #FFD9D4;
+  --color-charcoal: #4A4543;
+  --color-gold: #E8B84B;
 
-  --color-bg: var(--color-parchment);
+  /* Legacy tailwind variables mapped to new tokens */
+  --color-cream: var(--color-paper);
+  --color-parchment: var(--color-paper);
+  --color-dust: var(--color-charcoal);
+  --color-crimson: var(--color-red);
+  --color-ember: var(--color-red-deep);
+  --color-sepia: var(--color-charcoal);
+
+  --color-bg: var(--color-paper);
   --color-text: var(--color-ink);
-  --color-text-muted: var(--color-dust);
-  --color-accent: var(--color-crimson);
-  --color-accent-dark: var(--color-ember);
-  --color-accent-light: var(--color-crimson);
+  --color-text-muted: var(--color-charcoal);
+  --color-accent: var(--color-red);
+  --color-accent-dark: var(--color-red-deep);
+  --color-accent-light: var(--color-blush);
   --color-brown: var(--color-ink);
-  --color-brown-light: var(--color-dust);
-  --color-white: var(--color-cream);
+  --color-brown-light: var(--color-charcoal);
+  --color-white: var(--color-paper);
   --color-lock-bg: var(--color-ink);
-  --color-success: var(--color-crimson);
-  --color-error: var(--color-crimson);
+  --color-success: var(--color-red);
+  --color-error: var(--color-red);
 
   --font-display: 'Cormorant Garamond', serif;
   --font-body: 'DM Sans', sans-serif;

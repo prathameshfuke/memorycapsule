@@ -28,15 +28,16 @@ export default function Card({
         padding: '40px',
       }
     : {
-        background: 'var(--color-cream)',
-        border: '1px solid var(--color-dust)',
+        background: 'var(--color-paper)',
+        border: '1px solid var(--color-blush)',
         borderRadius: '4px',
         padding: '24px',
         boxShadow: 'none',
+        color: 'var(--color-ink)',
       };
 
   const Tag = onClick ? 'button' : 'div';
-  const leftBorderClass = leftBorder ? 'border-l-4 border-l-[var(--color-ember)] hover:border-l-[var(--color-crimson)] transition-colors' : '';
+  const leftBorderClass = leftBorder ? 'border-l-4 border-l-[var(--color-red)] hover:border-l-[var(--color-red-deep)] transition-colors' : '';
 
   return (
     <Tag

@@ -20,10 +20,9 @@ export function WordCloud({ words }: { words: OneWord[] }) {
   }
 
   const wordColors = [
-    'var(--color-blush)',
     'var(--color-ink)',
-    'var(--color-sepia)',
-    'var(--color-dust)',
+    'var(--color-red)',
+    'var(--color-charcoal)',
   ];
 
   // Count duplicates for size weighting
@@ -127,7 +126,7 @@ export default function OneWordPage() {
             <p className="text-sm text-[var(--color-dust)] font-[family-name:var(--font-body)] leading-relaxed">
               A cloud of words is forming for you. You'll see how everyone describes you on your birthday.
             </p>
-            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-blush)]">
+            <p className="text-sm uppercase tracking-[0.2em] font-bold text-red mt-2">
               Locked until July 5
             </p>
           </div>
@@ -146,7 +145,7 @@ export default function OneWordPage() {
                 in their words
               </h1>
             </div>
-            <div className="rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)]">
+            <div className="rounded-[4px] border border-blush bg-paper">
               <WordCloud words={words} />
             </div>
           </div>
@@ -236,11 +235,11 @@ export default function OneWordPage() {
                   maxLength={20}
                   autoFocus
                   autoComplete="off"
-                  className="w-full bg-transparent text-center border-none outline-none caret-[var(--color-blush)]"
+                  className="w-full bg-transparent text-center border-none outline-none caret-red"
                   style={{
                     fontFamily: 'var(--font-display)',
                     fontSize: 'clamp(2.5rem, 8vw, 6.5rem)',
-                    color: 'var(--color-blush)',
+                    color: 'var(--color-red)',
                     letterSpacing: '0.02em',
                   }}
                 />
@@ -260,7 +259,7 @@ export default function OneWordPage() {
             <h2 className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] text-center mb-8">
               Word Cloud
             </h2>
-            <div className="rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)]">
+            <div className="rounded-[4px] border border-blush bg-paper">
               <WordCloud words={words} />
             </div>
           </div>

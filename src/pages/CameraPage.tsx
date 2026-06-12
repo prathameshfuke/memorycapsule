@@ -209,7 +209,7 @@ export default function CameraPage() {
             <p className="text-sm text-[var(--color-dust)] font-[family-name:var(--font-body)] leading-relaxed">
               Photos and videos are being collected in your album. The gallery will unlock on your birthday morning.
             </p>
-            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-blush)]">
+            <p className="text-sm uppercase tracking-[0.2em] font-bold text-red mt-2">
               Locked until July 5
             </p>
           </div>

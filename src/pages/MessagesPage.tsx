@@ -55,7 +55,7 @@ export default function MessagesPage() {
             <p className="text-sm text-[var(--color-dust)] font-[family-name:var(--font-body)] leading-relaxed">
               This journal is filling up with messages from your favorite people. Everything will be revealed here on your birthday morning.
             </p>
-            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-blush)]">
+            <p className="text-sm uppercase tracking-[0.2em] font-bold text-red mt-2">
               Locked until July 5
             </p>
           </div>
@@ -236,7 +236,7 @@ export default function MessagesPage() {
                     placeholder={targetCapsule === 'this-year' ? "What would you like her to remember forever?" : "Write a letter to her future self (opens July 5, 2027)..."}
                     maxLength={500}
                     rows={10}
-                    className="w-full flex-1 bg-transparent outline-none resize-none focus:ring-0 focus:border-none border-none caret-[var(--color-blush)]"
+                    className="w-full flex-1 bg-transparent outline-none resize-none focus:ring-0 focus:border-none border-none caret-red"
                     style={{
                       lineHeight: '32px',
                       border: 'none',

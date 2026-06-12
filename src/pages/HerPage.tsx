@@ -111,14 +111,14 @@ export default function HerPage() {
                 <span className="block text-[10px] uppercase tracking-[0.1em] text-[var(--color-cream)]/40">
                   {item.label}
                 </span>
-                <span className="text-2xl font-light font-[family-name:var(--font-display)] text-[var(--color-crimson)] tabular-nums mt-2 block">
+                <span className="text-2xl font-light font-[family-name:var(--font-display)] text-red tabular-nums mt-2 block">
                   {isLoading ? '...' : item.count}
                 </span>
               </div>
             ))}
           </div>
 
-          <p className="text-lg italic text-[var(--color-crimson)] font-[family-name:var(--font-display)] font-light mt-6">
+          <p className="text-xl italic text-red font-[family-name:var(--font-display)] font-bold mt-6">
             Locked until July 5
           </p>
         </motion.div>
@@ -158,7 +158,7 @@ export default function HerPage() {
               <span className="block text-[10px] uppercase tracking-[0.1em] text-[var(--color-dust)]">
                 {item.label}
               </span>
-              <span className="text-2xl font-light font-[family-name:var(--font-display)] text-[var(--color-crimson)] tabular-nums mt-2 block">
+              <span className="text-2xl font-light font-[family-name:var(--font-display)] text-red tabular-nums mt-2 block">
                 {isLoading ? '...' : item.count}
               </span>
             </div>
