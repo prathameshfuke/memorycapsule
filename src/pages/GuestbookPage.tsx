@@ -6,6 +6,40 @@ import { isCapsuleUnlocked } from '../lib/constants';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { GuestbookEntry } from '../types/database';
 import PageWrapper from '../components/layout/PageWrapper';
+import Card from '../components/shared/Card';
+import Button from '../components/shared/Button';
+
+/* ─── Entries Grid (reusable for CapsulePage) ─── */
+export function GuestbookEntries({ entries }: { entries: GuestbookEntry[] }) {
+  if (entries.length === 0) {
+    return <p className="text-center text-sm text-[var(--color-dust)]">No signatures found.</p>;
+  }
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {entries.map((entry, i) => (
+        <motion.div
+          key={entry.id}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.04 }}
+          className="h-full"
+        >
+          <Card className="h-full flex flex-col justify-between">
+            <div>
+              <p className="text-base leading-relaxed text-[var(--color-ink)] font-light italic font-[family-name:var(--font-display)]">
+                "{entry.message}"
+              </p>
+            </div>
+            <div className="flex items-center justify-between mt-6 text-[var(--color-dust)] border-t border-[var(--color-dust)]/10 pt-4 text-[10px] uppercase tracking-[0.1em]">
+              <span>— {entry.guest_name || 'Anonymous'}</span>
+              <span className="tabular-nums">{new Date(entry.created_at).toLocaleDateString()}</span>
+            </div>
+          </Card>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
 export default function GuestbookPage() {
   const { guestName, isRegistered, setShowRegistration } = useGuest();
@@ -18,12 +52,7 @@ export default function GuestbookPage() {
   const fetchEntries = useCallback(async () => {
     const mode = localStorage.getItem('mode');
     const unlocked = isCapsuleUnlocked();
-
-    // Query gate: if not admin and locked, DO NOT query
-    if (mode !== 'admin' && !unlocked) {
-      return;
-    }
-
+    if (mode !== 'admin' && !unlocked) return;
     if (isSupabaseConfigured()) {
       try {
         const { data } = await supabase
@@ -43,19 +72,20 @@ export default function GuestbookPage() {
 
   const mode = localStorage.getItem('mode');
 
+  /* ─── Birthday Girl View ─── */
   if (mode === 'birthday_girl') {
     if (isLocked) {
       return (
-        <PageWrapper className="bg-[#FAF7F2]">
-          <div className="film-grain pointer-events-none fixed inset-0 z-40" />
-          <div className="px-6 pt-24 pb-12 max-w-md mx-auto min-h-[80vh] flex flex-col items-center justify-center text-center space-y-6">
+        <PageWrapper className="bg-[var(--color-parchment)]">
+          <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-md mx-auto min-h-[80vh] flex flex-col items-center justify-center text-center space-y-6">
+            <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)]">Sealed</span>
             <h1 className="text-3xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]">
               sealed guestbook
             </h1>
             <p className="text-sm text-[var(--color-dust)] font-[family-name:var(--font-body)] leading-relaxed">
               The guest registry is sealed until your birthday morning.
             </p>
-            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-blush)] font-medium">
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-blush)]">
               Locked until July 5
             </p>
           </div>
@@ -63,53 +93,31 @@ export default function GuestbookPage() {
       );
     } else {
       return (
-        <PageWrapper className="bg-[#FAF7F2]">
-          <div className="film-grain pointer-events-none fixed inset-0 z-40" />
-          <div className="px-6 pt-24 pb-12 max-w-[860px] mx-auto space-y-8">
-            <div className="text-center space-y-2">
-              <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
-                Revealed
+        <PageWrapper className="bg-[var(--color-parchment)]">
+          <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-[860px] mx-auto">
+            <div className="text-center mb-16">
+              <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
+                Signed by
               </span>
               <h1 className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
-                guestbook signatures
+                {entries.length} signature{entries.length !== 1 ? 's' : ''} so far
               </h1>
             </div>
-            
-            <div className="space-y-4 pt-8">
-              {entries.map((entry, i) => (
-                <div
-                  key={entry.id}
-                  className="p-5 rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)]"
-                  style={{ transform: `rotate(${-0.5 + (i * 0.3) % 1}deg)` }}
-                >
-                  <p className="text-base leading-relaxed text-[var(--color-ink)] font-light italic font-[family-name:var(--font-display)]">
-                    "{entry.message}"
-                  </p>
-                  <div className="flex items-center justify-between mt-4 text-[var(--color-dust)] border-t border-[var(--color-dust)]/10 pt-3 text-[10px] uppercase tracking-[0.1em]">
-                    <span>— {entry.guest_name || 'Anonymous'}</span>
-                    <span className="tabular-nums">{new Date(entry.created_at).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {entries.length === 0 && (
-              <p className="text-center text-sm text-[var(--color-dust)] italic">No signatures found.</p>
-            )}
+            <GuestbookEntries entries={entries} />
           </div>
         </PageWrapper>
       );
     }
   }
 
+  /* ─── Guest/Admin: Form + Entries ─── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
-
     if (!isRegistered) {
       setShowRegistration(true);
       return;
     }
-
     setIsSubmitting(true);
     try {
       if (isSupabaseConfigured()) {
@@ -120,7 +128,6 @@ export default function GuestbookPage() {
         if (error) throw error;
         fetchEntries();
       } else {
-        // Local fallback
         setEntries(prev => [...prev, {
           id: crypto.randomUUID(),
           guest_name: guestName || 'Anonymous',
@@ -138,25 +145,21 @@ export default function GuestbookPage() {
   };
 
   return (
-    <PageWrapper className="bg-[#FAF7F2]">
-      <div className="film-grain pointer-events-none fixed inset-0 z-40" />
-
-      <div className="px-6 pt-20 pb-8 max-w-[860px] mx-auto">
+    <PageWrapper className="bg-[var(--color-parchment)]">
+      <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-[860px] mx-auto">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-2 mb-8"
+          className="text-center mb-16"
         >
-          <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
-            Registry
+          <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
+            Leave your mark
           </span>
-          <h1
-            className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]"
-          >
-            guestbook
+          <h1 className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
+            sign the guestbook
           </h1>
-          <p className="text-sm text-[var(--color-dust)]">
+          <p className="text-sm text-[var(--color-dust)] mt-4">
             Leave your signature on the registry.
           </p>
         </motion.div>
@@ -168,86 +171,64 @@ export default function GuestbookPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
             onSubmit={handleSubmit}
-            className="mb-12 space-y-4"
+            className="space-y-4 max-w-lg mx-auto"
           >
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Write a public note..."
               rows={4}
-              className="w-full px-5 py-4 rounded-[4px] text-sm outline-none resize-none leading-relaxed caret-[var(--color-blush)]"
+              className="w-full px-0 py-4 text-sm outline-none resize-none leading-relaxed caret-[var(--color-blush)] bg-transparent border-b border-[var(--color-dust)] focus:border-[var(--color-blush)] transition-colors"
               style={{
-                background: 'var(--color-cream)',
                 color: 'var(--color-ink)',
-                border: '1px solid var(--color-dust)',
-                fontFamily: message ? 'var(--font-handwritten)' : 'var(--font-body)',
+                fontFamily: message ? 'var(--font-display)' : 'var(--font-body)',
                 fontStyle: message ? 'italic' : 'normal',
                 fontSize: message ? '1.1rem' : '0.875rem',
+                borderTop: 'none',
+                borderLeft: 'none',
+                borderRight: 'none',
+                borderRadius: 0,
               }}
             />
-            <button
-              type="submit"
-              disabled={!message.trim() || isSubmitting}
-              className="w-full py-3.5 bg-[var(--color-ink)] text-[var(--color-cream)] rounded-[4px] text-xs uppercase tracking-[0.2em] font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-ink)]/90 transition-colors"
-            >
-              {isSubmitting ? 'signing registry...' : 'sign the guestbook'}
-            </button>
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={!message.trim() || isSubmitting}
+              >
+                {isSubmitting ? 'signing registry...' : 'sign the guestbook'}
+              </Button>
+            </div>
           </motion.form>
         ) : (
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-12 mb-12 rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)] flex flex-col items-center justify-center space-y-3"
           >
-            <h3 className="text-2xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]">
-              signature recorded
-            </h3>
-            <p className="text-sm text-[var(--color-dust)] max-w-xs">
-              Thank you for signing the guestbook.
-            </p>
-            <button
-              onClick={() => setHasSubmitted(false)}
-              className="text-xs uppercase tracking-[0.2em] underline text-[var(--color-dust)] hover:text-[var(--color-ink)] cursor-pointer mt-4"
-            >
-              sign again
-            </button>
+            <Card className="text-center py-16 max-w-lg mx-auto">
+              <h3 className="text-2xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)] mb-4">
+                signature recorded
+              </h3>
+              <p className="text-sm text-[var(--color-dust)] max-w-xs mx-auto">
+                Thank you for signing the guestbook.
+              </p>
+              <button
+                onClick={() => setHasSubmitted(false)}
+                className="text-xs uppercase tracking-[0.2em] underline text-[var(--color-dust)] hover:text-[var(--color-ink)] cursor-pointer mt-6 block mx-auto"
+              >
+                sign again
+              </button>
+            </Card>
           </motion.div>
         )}
 
-        {/* Entries (Only visible after unlock) */}
+        {/* 64px gap before entries */}
         {!isLocked && entries.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-xs uppercase tracking-[0.2em] font-semibold text-[var(--color-dust)] text-center mb-6">
-              Guest Signatures
+          <div className="mt-16">
+            <h2 className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] text-center mb-8">
+              Signed by — {entries.length} signature{entries.length !== 1 ? 's' : ''}
             </h2>
-            <div className="space-y-4">
-              {entries.map((entry, i) => (
-                <motion.div
-                  key={entry.id}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="p-5 rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)]"
-                  style={{
-                    transform: `rotate(${-0.5 + (i * 0.3) % 1}deg)`,
-                  }}
-                >
-                  <p
-                    className="text-base leading-relaxed text-[var(--color-ink)] font-light italic font-[family-name:var(--font-display)]"
-                  >
-                    "{entry.message}"
-                  </p>
-                  <div className="flex items-center justify-between mt-4 text-[var(--color-dust)] border-t border-[var(--color-dust)]/10 pt-3 text-[10px] uppercase tracking-[0.1em]">
-                    <span>
-                      — {entry.guest_name || 'Anonymous'}
-                    </span>
-                    <span className="tabular-nums">
-                      {new Date(entry.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+            <GuestbookEntries entries={entries} />
           </div>
         )}
       </div>

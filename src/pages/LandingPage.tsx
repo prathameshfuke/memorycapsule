@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../components/layout/PageWrapper';
 import Countdown from '../components/shared/Countdown';
+import Button from '../components/shared/Button';
 
 // Import local photos
 import babyImg from '../assets/baby.png';
@@ -19,7 +20,7 @@ function FadeInSection({ children, className = '', delay = 0 }: {
   delay?: number;
 }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const isInView = useInView(ref, { once: true, amount: 0.3 });
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   return (
@@ -42,13 +43,13 @@ function HeroSection() {
     target: targetRef,
     offset: ['start start', 'end start'],
   });
-  
+
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
   const yTranslate = useTransform(scrollYProgress, [0, 0.6], [0, prefersReducedMotion ? 0 : -30]);
 
   const scrollToJourney = () => {
-    const el = document.getElementById('beginning-section');
+    const el = document.getElementById('chapter-01');
     el?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -56,80 +57,55 @@ function HeroSection() {
     <motion.section
       ref={targetRef}
       style={{ opacity, y: yTranslate }}
-      className="relative min-h-[100dvh] w-full flex items-center bg-[#FAF7F2] overflow-hidden"
+      className="relative min-h-[100dvh] w-full flex items-center justify-center bg-[var(--color-ink)] overflow-hidden"
     >
-      {/* Full bleed grid */}
-      <div className="w-full min-h-[100dvh] grid grid-cols-1 md:grid-cols-12 items-center">
-        {/* Visual Frame - Left Column on Desktop */}
-        <div className="md:col-span-6 w-full h-full min-h-[50vh] md:min-h-screen flex items-center justify-center p-6 bg-[#FAF7F2] relative">
-          {/* Subtle warm overlay */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-[#FAF7F2] to-[#FAF7F2]/40 z-10 pointer-events-none" />
-          
-          <motion.div
-            initial={{ opacity: 0, rotate: -3 }}
-            animate={{ opacity: 1, rotate: -1.5 }}
-            transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-20"
+      {/* Film grain on dark */}
+      <div className="film-grain pointer-events-none absolute inset-0 z-10" />
+
+      {/* Vignette */}
+      <div className="ink-vignette absolute inset-0 z-20 pointer-events-none" />
+
+      {/* Content */}
+      <div className="relative z-30 text-center px-6 max-w-xl">
+        <motion.div
+          initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.4, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          className="space-y-8"
+        >
+          <h1
+            className="font-[family-name:var(--font-display)] italic font-light text-[var(--color-cream)]"
+            style={{ fontSize: 'clamp(3rem, 8vw, 7rem)', lineHeight: 1.05 }}
           >
-            {/* Polaroid image frame */}
-            <div
-              className="w-64 h-80 md:w-80 md:h-[400px] p-4 bg-[#FAF7F2] border border-[var(--color-dust)] rounded-[4px]"
-              style={{
-                boxShadow: 'none',
-              }}
+            Her Story
+          </h1>
+          <p
+            className="text-base md:text-lg font-[family-name:var(--font-body)] text-[var(--color-dust)] max-w-[480px] mx-auto leading-relaxed"
+          >
+            A collection of moments, memories and people.
+          </p>
+
+          <div className="pt-4">
+            <button
+              onClick={scrollToJourney}
+              className="px-8 py-3 rounded-[4px] text-xs uppercase tracking-[0.2em] cursor-pointer border border-[var(--color-blush)] text-[var(--color-blush)] bg-transparent hover:bg-[var(--color-blush)]/10 transition-colors"
             >
-              <img
-                src={latestImg}
-                alt="Kashish"
-                className="w-full h-full object-cover grayscale brightness-[1.02] contrast-[0.98]"
-              />
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Text Details - Right Column on Desktop */}
-        <div className="md:col-span-6 w-full h-full flex flex-col justify-center px-8 md:px-16 py-12 md:py-0 bg-[#FAF7F2] relative">
-          <motion.div
-            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 25 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="max-w-md space-y-6 text-left"
-          >
-            <p className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
-              5 July 2026
-            </p>
-            <h1 className="text-[clamp(2.5rem,6vw,4.5rem)] font-light leading-tight text-[var(--color-ink)] font-[family-name:var(--font-display)]">
-              a small celebration
-            </h1>
-            <p className="text-xl md:text-2xl font-light italic leading-relaxed text-[var(--color-dust)] font-[family-name:var(--font-display)]">
-              for someone who means a lot to all of us.
-            </p>
-
-            <div className="pt-4 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              <button
-                onClick={scrollToJourney}
-                className="px-8 py-3 rounded-[4px] text-xs font-medium tracking-[0.2em] uppercase transition-colors cursor-pointer border border-[var(--color-dust)] text-[var(--color-ink)] hover:bg-[var(--color-cream)]"
-              >
-                begin the chapters
-              </button>
-              
-              <div className="scale-90 origin-left">
-                <Countdown />
-              </div>
-            </div>
-          </motion.div>
-        </div>
+              begin
+            </button>
+          </div>
+        </motion.div>
       </div>
     </motion.section>
   );
 }
 
-/* ─── Story Section Template ─── */
-function StorySection({
+/* ─── Story Chapter ─── */
+function StoryChapter({
   id,
   image,
   title,
   caption,
+  chapterNum,
   style = 'polaroid',
   rotation = 0,
   isEven,
@@ -138,6 +114,7 @@ function StorySection({
   image: string;
   title: string;
   caption: string;
+  chapterNum: string;
   style?: 'polaroid' | 'scrapbook' | 'film' | 'cinematic';
   rotation?: number;
   isEven: boolean;
@@ -147,77 +124,69 @@ function StorySection({
       case 'polaroid':
         return (
           <div
-            className="bg-[#FAF7F2] p-4 pb-8 border border-[var(--color-dust)] rounded-[4px]"
-            style={{
-              transform: `rotate(${rotation}deg)`,
-            }}
+            className="bg-[var(--color-cream)] p-4 pb-8 border border-[var(--color-dust)] rounded-[4px]"
+            style={{ transform: `rotate(${rotation}deg)` }}
           >
-            <img src={image} alt={title} className="w-full aspect-square object-cover mb-4" />
-            <div className="h-6 w-full bg-[#FAF7F2] border-t border-[var(--color-dust)]/10" />
+            <img src={image} alt={title} className="w-full object-cover" style={{ aspectRatio: '4/5' }} />
           </div>
         );
       case 'scrapbook':
         return (
           <div
-            className="p-3 bg-[#FAF7F2] border border-[var(--color-dust)] rounded-[4px] relative"
-            style={{
-              transform: `rotate(${rotation}deg)`,
-            }}
+            className="p-3 bg-[var(--color-cream)] border border-[var(--color-dust)] rounded-[4px] relative"
+            style={{ transform: `rotate(${rotation}deg)` }}
           >
-            {/* Scrapbook photo tape */}
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-20 h-6 bg-[rgba(201,137,122,0.15)] border border-dashed border-[var(--color-dust)]/20 rotate-[-2deg]" />
-            <img src={image} alt={title} className="w-full aspect-[4/3] object-cover rounded-[2px]" />
+            <img src={image} alt={title} className="w-full object-cover rounded-[2px]" style={{ aspectRatio: '4/5' }} />
           </div>
         );
       case 'film':
         return (
-          <div className="relative py-4 bg-[#1A1614] px-6 rounded-[4px] border border-[var(--color-dust)]">
-            {/* Film strip edge markings */}
+          <div className="relative py-4 bg-[var(--color-ink)] px-6 rounded-[4px] border border-[var(--color-dust)]">
             <div className="absolute top-0 bottom-0 left-2 w-2 flex flex-col justify-between py-2">
               {Array.from({ length: 8 }).map((_, idx) => (
-                <div key={idx} className="w-1.5 h-3 bg-[#FAF7F2] rounded-[1px]" />
+                <div key={idx} className="w-1.5 h-3 bg-[var(--color-cream)] rounded-[1px]" />
               ))}
             </div>
             <div className="absolute top-0 bottom-0 right-2 w-2 flex flex-col justify-between py-2">
               {Array.from({ length: 8 }).map((_, idx) => (
-                <div key={idx} className="w-1.5 h-3 bg-[#FAF7F2] rounded-[1px]" />
+                <div key={idx} className="w-1.5 h-3 bg-[var(--color-cream)] rounded-[1px]" />
               ))}
             </div>
-            <img src={image} alt={title} className="w-full aspect-[3/2] object-cover grayscale brightness-95" />
+            <img src={image} alt={title} className="w-full object-cover grayscale brightness-95" style={{ aspectRatio: '4/5' }} />
           </div>
         );
       case 'cinematic':
         return (
           <div className="rounded-[4px] overflow-hidden border border-[var(--color-dust)] relative">
-            <img src={image} alt={title} className="w-full aspect-[16/10] object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#1A1614]/40 to-transparent" />
+            <img src={image} alt={title} className="w-full object-cover" style={{ aspectRatio: '4/5' }} />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-ink)]/40 to-transparent" />
           </div>
         );
       default:
-        return <img src={image} alt={title} className="w-full object-cover rounded-[4px]" />;
+        return <img src={image} alt={title} className="w-full object-cover rounded-[4px]" style={{ aspectRatio: '4/5' }} />;
     }
   };
 
   return (
-    <section id={id} className="min-h-[85vh] flex items-center justify-center py-20 px-6 border-b border-[var(--color-dust)]/10">
-      <div className="w-full max-w-[860px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
-        {/* Asymmetric layout logic: Alternate ordering on desktop, Normal order on mobile */}
-        <FadeInSection className={isEven ? "md:order-1" : "md:order-2"} delay={0}>
+    <section id={id} className="py-12">
+      <div className="w-full max-w-[860px] mx-auto px-6 md:px-8 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
+        {/* Asymmetric layout: alternate ordering on desktop */}
+        <FadeInSection className={isEven ? 'md:order-1' : 'md:order-2'} delay={0}>
           <div className="relative z-10">{renderImage()}</div>
         </FadeInSection>
 
-        <FadeInSection className={isEven ? "md:order-2" : "md:order-1"} delay={0.15}>
+        <FadeInSection className={isEven ? 'md:order-2' : 'md:order-1'} delay={0.15}>
           <div className={`space-y-4 ${isEven ? 'text-left' : 'text-left md:text-right'}`}>
+            <span className="block text-[10px] uppercase tracking-[0.2em] text-[var(--color-dust)]">
+              {chapterNum}
+            </span>
             <h2
-              className="text-2xl md:text-3xl font-light"
-              style={{ fontFamily: 'var(--font-display)', color: 'var(--color-brown)' }}
+              className="text-2xl md:text-3xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]"
             >
               {title}
             </h2>
-            <p
-              className="text-base md:text-lg leading-relaxed text-[var(--color-dust)] whitespace-pre-line"
-              style={{ fontFamily: 'var(--font-body)' }}
-            >
+            <p className="text-base md:text-lg leading-relaxed text-[var(--color-dust)] whitespace-pre-line font-[family-name:var(--font-body)]">
               {caption}
             </p>
           </div>
@@ -234,30 +203,26 @@ function FinalRevealSection() {
   const showGuestDashboard = mode === 'guest' || mode === 'admin';
 
   return (
-    <section className="min-h-screen flex flex-col items-center justify-center py-24 px-6 relative bg-[#FAF7F2]/50 border-t border-[var(--color-dust)]/10">
+    <section className="min-h-[100dvh] flex flex-col items-center justify-center py-24 px-6 relative bg-[var(--color-parchment)]">
       {/* Decorative vertical separator */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-24 bg-gradient-to-b from-transparent to-[var(--color-dust)]/20" />
 
-      <div className="w-full max-w-xl text-center space-y-12">
+      <div className="w-full max-w-md text-center space-y-8">
         <FadeInSection>
           <div
-            className="w-full aspect-[4/5] md:aspect-square max-w-sm mx-auto p-4 bg-[#FAF7F2] border border-[var(--color-dust)] rounded-[4px]"
+            className="w-full max-w-xs mx-auto p-4 bg-[var(--color-cream)] border border-[var(--color-dust)] rounded-[4px]"
             style={{ transform: 'rotate(1deg)' }}
           >
-            <img src={latestImg} alt="Latest Portrait" className="w-full h-full object-cover grayscale" />
+            <img src={latestImg} alt="Latest Portrait" className="w-full object-cover grayscale" style={{ aspectRatio: '4/5' }} />
           </div>
         </FadeInSection>
 
         <FadeInSection delay={0.15}>
           <div className="space-y-4">
-            <p
-              className="text-xl md:text-2xl leading-loose font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]"
-            >
+            <p className="text-xl md:text-2xl leading-loose font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]">
               And now,
             </p>
-            <p
-              className="text-2xl md:text-3xl leading-loose font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]"
-            >
+            <p className="text-2xl md:text-3xl leading-loose font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]">
               another year.
               <br />
               another memory.
@@ -267,24 +232,21 @@ function FinalRevealSection() {
           </div>
         </FadeInSection>
 
-        <FadeInSection delay={0.3} className="pt-6">
-          <div className="flex flex-col gap-4 max-w-xs mx-auto">
-            {/* Play Games Button */}
-            <button
-              onClick={() => navigate('/games')}
-              className="py-4 rounded-[4px] text-xs font-medium uppercase tracking-[0.2em] cursor-pointer border border-[var(--color-dust)] text-[var(--color-ink)] bg-[var(--color-cream)] hover:bg-[#FAF7F2] transition-colors"
-            >
-              play party games
-            </button>
+        <FadeInSection delay={0.3}>
+          <div className="pt-8">
+            <Countdown />
+          </div>
+        </FadeInSection>
 
-            {/* Direct Dashboard Access Button for Guest / Admin */}
+        <FadeInSection delay={0.4} className="pt-4">
+          <div className="flex flex-col gap-4 max-w-xs mx-auto">
+            <Button variant="ghost" onClick={() => navigate('/games')} fullWidth>
+              play party games
+            </Button>
             {showGuestDashboard && (
-              <button
-                onClick={() => navigate('/guest')}
-                className="py-4 rounded-[4px] text-xs font-medium uppercase tracking-[0.2em] cursor-pointer bg-[var(--color-ink)] text-[var(--color-cream)] hover:bg-[var(--color-ink)]/90 transition-colors"
-              >
+              <Button variant="primary" onClick={() => navigate('/guest')} fullWidth>
                 enter guest area
-              </button>
+              </Button>
             )}
           </div>
         </FadeInSection>
@@ -297,63 +259,63 @@ function FinalRevealSection() {
 export default function LandingPage() {
   return (
     <PageWrapper>
-      {/* Film grain layer overlay */}
-      <div className="film-grain pointer-events-none fixed inset-0 z-40" />
-
       <HeroSection />
 
-      {/* Chapter 1: The Beginning */}
-      <StorySection
-        id="beginning-section"
-        image={babyImg}
-        title="The Beginning"
-        caption={`Every family album has a few photos\nthat somehow survive every cleanup.\n\nThis is one of them.`}
-        style="polaroid"
-        rotation={-2}
-        isEven={true}
-      />
+      {/* 96px gap between chapters */}
+      <div className="bg-[var(--color-parchment)]" style={{ display: 'flex', flexDirection: 'column', gap: '96px', paddingTop: '96px', paddingBottom: '96px' }}>
+        <StoryChapter
+          id="chapter-01"
+          image={babyImg}
+          title="The Beginning"
+          caption={`Every family album has a few photos\nthat somehow survive every cleanup.\n\nThis is one of them.`}
+          chapterNum="Chapter 01"
+          style="polaroid"
+          rotation={-2}
+          isEven={true}
+        />
 
-      {/* Chapter 2: Strong Opinions */}
-      <StorySection
-        id="opinions-section"
-        image={angydonImg}
-        title="Strong Opinions Since Day One"
-        caption={`Some things change with time.\n\nThat look isn't one of them.`}
-        style="scrapbook"
-        rotation={3}
-        isEven={false}
-      />
+        <StoryChapter
+          id="chapter-02"
+          image={angydonImg}
+          title="Strong Opinions Since Day One"
+          caption={`Some things change with time.\n\nThat look isn't one of them.`}
+          chapterNum="Chapter 02"
+          style="scrapbook"
+          rotation={3}
+          isEven={false}
+        />
 
-      {/* Chapter 3: Center Stage */}
-      <StorySection
-        id="stage-section"
-        image={kidImg}
-        title="Center Stage"
-        caption={`School functions.\nDance performances.\nAnnual days.\n\nThe camera somehow always found her.`}
-        style="film"
-        isEven={true}
-      />
+        <StoryChapter
+          id="chapter-03"
+          image={kidImg}
+          title="Center Stage"
+          caption={`School functions.\nDance performances.\nAnnual days.\n\nThe camera somehow always found her.`}
+          chapterNum="Chapter 03"
+          style="film"
+          isEven={true}
+        />
 
-      {/* Chapter 4: The Version We Know */}
-      <StorySection
-        id="version-section"
-        image={landerImg}
-        title="The Version We Know"
-        caption={`Somewhere between\nthe old photo albums\nand today,\n\nshe became everyone's favourite person.`}
-        style="scrapbook"
-        rotation={-1.5}
-        isEven={false}
-      />
+        <StoryChapter
+          id="chapter-04"
+          image={landerImg}
+          title="The Version We Know"
+          caption={`Somewhere between\nthe old photo albums\nand today,\n\nshe became everyone's favourite person.`}
+          chapterNum="Chapter 04"
+          style="scrapbook"
+          rotation={-1.5}
+          isEven={false}
+        />
 
-      {/* Chapter 5: Aaj Kal */}
-      <StorySection
-        id="today-section"
-        image={presentImg}
-        title="Aaj Kal"
-        caption={`A little older.\n\nA little wiser.\n\nStill exactly herself.`}
-        style="cinematic"
-        isEven={true}
-      />
+        <StoryChapter
+          id="chapter-05"
+          image={presentImg}
+          title="Aaj Kal"
+          caption={`A little older.\n\nA little wiser.\n\nStill exactly herself.`}
+          chapterNum="Chapter 05"
+          style="cinematic"
+          isEven={true}
+        />
+      </div>
 
       <FinalRevealSection />
     </PageWrapper>

@@ -7,10 +7,11 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { OneWord } from '../types/database';
 import PageWrapper from '../components/layout/PageWrapper';
 
-function WordCloud({ words }: { words: OneWord[] }) {
+/* ─── Word Cloud Component (reusable for CapsulePage) ─── */
+export function WordCloud({ words }: { words: OneWord[] }) {
   if (words.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-16">
         <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)]">
           Be the first to add a word
         </p>
@@ -19,39 +20,55 @@ function WordCloud({ words }: { words: OneWord[] }) {
   }
 
   const wordColors = [
-    'var(--color-ink)',
     'var(--color-blush)',
+    'var(--color-ink)',
     'var(--color-sepia)',
     'var(--color-dust)',
   ];
 
-  const wordSizes = ['text-lg', 'text-xl', 'text-2xl', 'text-3xl'];
+  // Count duplicates for size weighting
+  const wordCounts: Record<string, number> = {};
+  words.forEach(w => {
+    const key = w.word.toLowerCase();
+    wordCounts[key] = (wordCounts[key] || 0) + 1;
+  });
+
+  const maxCount = Math.max(...Object.values(wordCounts));
+
+  const getSizeClass = (word: string) => {
+    const count = wordCounts[word.toLowerCase()] || 1;
+    const ratio = count / maxCount;
+    if (ratio > 0.7) return 'text-3xl md:text-4xl';
+    if (ratio > 0.4) return 'text-2xl md:text-3xl';
+    if (ratio > 0.2) return 'text-xl md:text-2xl';
+    return 'text-lg md:text-xl';
+  };
+
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   return (
-    <div className="relative min-h-[300px] flex flex-wrap items-center justify-center gap-4 px-4 py-8">
+    <div className="relative flex flex-wrap items-center justify-center gap-4 md:gap-6 px-4 py-8 min-h-[280px]">
       {words.map((word, i) => {
-        const size = wordSizes[i % wordSizes.length];
+        const size = getSizeClass(word.word);
         const color = wordColors[i % wordColors.length];
-        const rotation = -8 + (i * 7) % 16;
-        const driftX = -10 + (i * 3) % 20;
-        const driftY = -10 + (i * 4) % 20;
+        const driftX = -8 + (i * 3) % 16;
+        const driftY = -8 + (i * 4) % 16;
 
         return (
           <motion.div
             key={word.id}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.05 }}
-            className={`${size} font-light cursor-default select-none`}
+            transition={{ delay: i * 0.04 }}
+            className={`${size} font-light cursor-default select-none px-2 py-1`}
             style={{
               fontFamily: 'var(--font-display)',
               color,
-              transform: `rotate(${rotation}deg)`,
-              animation: `wordDrift ${6 + (i % 4)}s ease-in-out infinite`,
-              animationDelay: `${(i % 3) * 0.5}s`,
+              animation: prefersReducedMotion ? 'none' : `wordDrift ${6 + (i % 4)}s ease-in-out infinite`,
+              animationDelay: `${(i % 5) * 0.4}s`,
               ['--drift-x' as string]: `${driftX}px`,
               ['--drift-y' as string]: `${driftY}px`,
-              ['--word-rotate' as string]: `${rotation}deg`,
+              ['--word-rotate' as string]: `0deg`,
             }}
             title={`— ${word.guest_name || 'anonymous'}`}
           >
@@ -74,12 +91,7 @@ export default function OneWordPage() {
   const fetchWords = useCallback(async () => {
     const mode = localStorage.getItem('mode');
     const unlocked = isCapsuleUnlocked();
-
-    // Query gate: if not admin and locked, DO NOT query
-    if (mode !== 'admin' && !unlocked) {
-      return;
-    }
-
+    if (mode !== 'admin' && !unlocked) return;
     if (isSupabaseConfigured()) {
       try {
         const { data } = await supabase
@@ -99,20 +111,23 @@ export default function OneWordPage() {
 
   const mode = localStorage.getItem('mode');
 
+  /* ─── Birthday Girl View ─── */
   if (mode === 'birthday_girl') {
     if (isLocked) {
       return (
-        <PageWrapper className="bg-[#1A1614]">
-          <div className="film-grain pointer-events-none fixed inset-0 z-40" />
+        <PageWrapper className="bg-[var(--color-ink)]">
           <div className="ink-vignette absolute inset-0 z-10 pointer-events-none" />
-          <div className="relative z-20 px-6 pt-24 pb-12 max-w-md mx-auto min-h-[80vh] flex flex-col items-center justify-center text-center space-y-6 text-[#FAF7F2]">
-            <h1 className="text-3xl font-light font-[family-name:var(--font-display)] text-[#FAF7F2]">
+          <div className="relative z-20 px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-md mx-auto min-h-[80vh] flex flex-col items-center justify-center text-center space-y-6 text-[var(--color-cream)]">
+            <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)]">
+              Sealed
+            </span>
+            <h1 className="text-3xl font-light font-[family-name:var(--font-display)] text-[var(--color-cream)]">
               sealed words
             </h1>
             <p className="text-sm text-[var(--color-dust)] font-[family-name:var(--font-body)] leading-relaxed">
               A cloud of words is forming for you. You'll see how everyone describes you on your birthday.
             </p>
-            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-blush)] font-medium">
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-blush)]">
               Locked until July 5
             </p>
           </div>
@@ -120,19 +135,17 @@ export default function OneWordPage() {
       );
     } else {
       return (
-        <PageWrapper className="bg-[#FAF7F2]">
-          <div className="film-grain pointer-events-none fixed inset-0 z-40" />
-          <div className="px-6 pt-24 pb-12 max-w-[860px] mx-auto space-y-8">
-            <div className="text-center space-y-2">
-              <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
+        <PageWrapper className="bg-[var(--color-parchment)]">
+          <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-[860px] mx-auto">
+            <div className="text-center mb-16">
+              <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
                 Revealed
               </span>
               <h1 className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
                 in their words
               </h1>
             </div>
-            
-            <div className="rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)] pt-8">
+            <div className="rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)]">
               <WordCloud words={words} />
             </div>
           </div>
@@ -141,15 +154,14 @@ export default function OneWordPage() {
     }
   }
 
+  /* ─── Guest/Admin: Input Mode ─── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputWord.trim()) return;
-
     if (!isRegistered) {
       setShowRegistration(true);
       return;
     }
-
     setIsSubmitting(true);
     try {
       if (isSupabaseConfigured()) {
@@ -159,7 +171,6 @@ export default function OneWordPage() {
         }]);
         if (error) throw error;
       } else {
-        // Local fallback
         setWords(prev => [...prev, {
           id: crypto.randomUUID(),
           guest_name: guestName || 'Anonymous',
@@ -178,14 +189,15 @@ export default function OneWordPage() {
   };
 
   return (
-    <PageWrapper className="relative min-h-[100dvh] flex flex-col justify-between bg-[#1A1614] overflow-hidden">
-      {/* Film grain */}
-      <div className="film-grain pointer-events-none fixed inset-0 z-40" />
-
-      {/* Dark Vignette Overlay */}
+    <PageWrapper className="relative bg-[var(--color-ink)] overflow-hidden">
+      {/* Vignette */}
       <div className="ink-vignette absolute inset-0 z-10 pointer-events-none" />
 
-      <div className="relative z-20 flex-1 flex flex-col justify-center px-6 max-w-[860px] mx-auto w-full">
+      {/* Centered input — calc height to account for nav */}
+      <div
+        className="relative z-20 flex flex-col justify-center px-6 md:px-8 max-w-[860px] mx-auto w-full"
+        style={{ minHeight: 'calc(100dvh - 80px)' }}
+      >
         <AnimatePresence mode="wait">
           {hasSubmitted ? (
             <motion.div
@@ -193,9 +205,9 @@ export default function OneWordPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className="text-center space-y-6 flex flex-col items-center justify-center flex-1"
+              className="text-center space-y-6 flex flex-col items-center justify-center"
             >
-              <h1 className="text-3xl font-light font-[family-name:var(--font-display)] text-[#FAF7F2]">
+              <h1 className="text-3xl font-light font-[family-name:var(--font-display)] text-[var(--color-cream)]">
                 added to capsule
               </h1>
               <p className="text-sm text-[var(--color-dust)] max-w-xs">
@@ -203,7 +215,7 @@ export default function OneWordPage() {
               </p>
               <button
                 onClick={() => setHasSubmitted(false)}
-                className="text-xs uppercase tracking-[0.2em] underline text-[var(--color-dust)] hover:text-[#FAF7F2] cursor-pointer mt-4"
+                className="text-xs uppercase tracking-[0.2em] underline text-[var(--color-dust)] hover:text-[var(--color-cream)] cursor-pointer mt-4"
               >
                 add another word
               </button>
@@ -214,7 +226,6 @@ export default function OneWordPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col justify-center"
             >
               <form onSubmit={handleSubmit} className="text-center w-full flex flex-col items-center justify-center">
                 <input
@@ -242,11 +253,11 @@ export default function OneWordPage() {
         </AnimatePresence>
       </div>
 
-      {/* Word Cloud display at the bottom (Only visible after unlock, rendered in light context) */}
+      {/* Word Cloud display (after unlock) */}
       {!isLocked && words.length > 0 && (
-        <div className="relative z-20 bg-[#FAF7F2] border-t border-[var(--color-dust)]/10 py-12 px-6">
-          <div className="max-w-[860px] mx-auto space-y-6">
-            <h2 className="text-xs uppercase tracking-[0.2em] font-semibold text-[var(--color-dust)] text-center">
+        <div className="relative z-20 bg-[var(--color-parchment)] border-t border-[var(--color-dust)]/10 py-16 px-6 md:px-8">
+          <div className="max-w-[860px] mx-auto">
+            <h2 className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] text-center mb-8">
               Word Cloud
             </h2>
             <div className="rounded-[4px] border border-[var(--color-dust)] bg-[var(--color-cream)]">

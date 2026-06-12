@@ -75,69 +75,7 @@ export const RELATIONSHIPS = [
   'Other',
 ];
 
-// Quiz questions (answers are configurable)
-export const QUIZ_QUESTIONS = [
-  {
-    id: 1,
-    question: "What's her favourite food?",
-    options: ['Biryani', 'Pizza', 'Pasta', 'Momos'],
-    answer: 0,
-  },
-  {
-    id: 2,
-    question: "What's her favourite colour?",
-    options: ['Lavender', 'Pink', 'Blue', 'Red'],
-    answer: 0,
-  },
-  {
-    id: 3,
-    question: "What's her dream destination?",
-    options: ['Paris', 'Switzerland', 'Bali', 'Japan'],
-    answer: 0,
-  },
-  {
-    id: 4,
-    question: "What's her favourite movie?",
-    options: ['The Notebook', 'Yeh Jawaani Hai Deewani', 'Tangled', 'La La Land'],
-    answer: 0,
-  },
-  {
-    id: 5,
-    question: "What's her biggest fear?",
-    options: ['Lizards', 'Heights', 'Darkness', 'Being alone'],
-    answer: 0,
-  },
-  {
-    id: 6,
-    question: "What's her most used phrase?",
-    options: ['\"Accha sunnn\"', '\"Haan toh\"', '\"Basically...\"', '\"Matlab...\"'],
-    answer: 0,
-  },
-  {
-    id: 7,
-    question: 'What does she do when she\'s nervous?',
-    options: ['Plays with hair', 'Bites nails', 'Talks too fast', 'Goes silent'],
-    answer: 0,
-  },
-  {
-    id: 8,
-    question: "What's her go-to comfort show?",
-    options: ['Friends', 'The Office', 'Brooklyn Nine-Nine', 'Modern Family'],
-    answer: 0,
-  },
-  {
-    id: 9,
-    question: 'What would she choose?',
-    options: ['Mountains', 'Beach', 'City', 'Countryside'],
-    answer: 0,
-  },
-  {
-    id: 10,
-    question: 'How does she express love?',
-    options: ['Words of affirmation', 'Acts of service', 'Quality time', 'Gifts'],
-    answer: 0,
-  },
-];
+// Quiz removed — feature deleted entirely
 
 // Dumb charades prompts
 export const CHARADES_PROMPTS: Record<string, string[]> = {

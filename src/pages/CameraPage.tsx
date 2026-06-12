@@ -7,6 +7,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { PHOTO_FILTERS } from '../lib/constants';
 import type { Photo } from '../types/database';
 import PageWrapper from '../components/layout/PageWrapper';
+import Button from '../components/shared/Button';
 
 /* ─── Filter Preview ─── */
 function FilterPreview({ imageSrc, onUpload, onBack }: {
@@ -32,7 +33,6 @@ function FilterPreview({ imageSrc, onUpload, onBack }: {
     const canvas = canvasRef.current;
     const img = imgRef.current;
     if (!canvas || !img) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -52,7 +52,6 @@ function FilterPreview({ imageSrc, onUpload, onBack }: {
         ctx.fillRect(0, y, canvas.width, 1);
       }
     }
-
     if (filterId === 'polaroid') {
       ctx.filter = 'none';
       ctx.strokeStyle = 'rgba(255,255,255,0.3)';
@@ -60,7 +59,6 @@ function FilterPreview({ imageSrc, onUpload, onBack }: {
       const inset = 8;
       ctx.strokeRect(inset, inset, canvas.width - inset * 2, canvas.height - inset * 2);
     }
-
     setSelectedFilter(filterId);
   }, []);
 
@@ -76,7 +74,7 @@ function FilterPreview({ imageSrc, onUpload, onBack }: {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="space-y-6"
+      className="max-w-[320px] mx-auto space-y-4"
     >
       <div className="rounded-[4px] border border-[var(--color-dust)] overflow-hidden bg-[var(--color-cream)]">
         <canvas ref={canvasRef} className="w-full h-auto block" />
@@ -103,20 +101,59 @@ function FilterPreview({ imageSrc, onUpload, onBack }: {
       </div>
 
       <div className="flex gap-4">
-        <button
-          onClick={onBack}
-          className="flex-1 py-3.5 border border-[var(--color-dust)] text-[var(--color-ink)] rounded-[4px] text-xs uppercase tracking-[0.2em] cursor-pointer hover:bg-[var(--color-cream)] transition-colors"
-        >
+        <Button variant="ghost" onClick={onBack} className="flex-1">
           back
-        </button>
-        <button
-          onClick={handleUpload}
-          className="flex-1 py-3.5 bg-[var(--color-ink)] text-[var(--color-cream)] rounded-[4px] text-xs uppercase tracking-[0.2em] cursor-pointer hover:bg-[var(--color-ink)]/90 transition-colors"
-        >
+        </Button>
+        <Button variant="primary" onClick={handleUpload} className="flex-1">
           save memory
-        </button>
+        </Button>
       </div>
     </motion.div>
+  );
+}
+
+/* ─── Media Gallery (reusable for CapsulePage) ─── */
+export function MediaGallery({ photos }: { photos: Photo[] }) {
+  if (photos.length === 0) {
+    return <p className="text-center text-sm text-[var(--color-dust)]">No shared memories found.</p>;
+  }
+  return (
+    <div
+      className="grid gap-2"
+      style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}
+    >
+      {photos.map((photo) => (
+        <div key={photo.id} className="relative rounded-[4px] overflow-hidden bg-[var(--color-cream)] border border-[var(--color-dust)]">
+          {photo.type === 'video' ? (
+            <>
+              <video
+                src={photo.photo_url}
+                controls
+                playsInline
+                className="w-full object-cover"
+                style={{ aspectRatio: '1/1' }}
+              />
+              {/* Play icon overlay */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-10 h-10 rounded-full bg-[var(--color-ink)]/70 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-[var(--color-cream)] ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+              </div>
+            </>
+          ) : (
+            <img
+              src={photo.photo_url}
+              alt="Memory"
+              className="w-full object-cover"
+              style={{ aspectRatio: '1/1' }}
+              loading="lazy"
+            />
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -126,12 +163,12 @@ export default function CameraPage() {
   const { isLocked } = useBirthdayLock();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  
-  // Upload and progress state
+
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [uploadQueue, setUploadQueue] = useState(0); // track multi-upload count
 
   const photoInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -139,12 +176,7 @@ export default function CameraPage() {
   const fetchPhotos = useCallback(async () => {
     const mode = localStorage.getItem('mode');
     const unlocked = isCapsuleUnlocked();
-
-    // Query gate: if not admin and locked, DO NOT query
-    if (mode !== 'admin' && !unlocked) {
-      return;
-    }
-
+    if (mode !== 'admin' && !unlocked) return;
     if (isSupabaseConfigured()) {
       try {
         const { data } = await supabase
@@ -164,19 +196,20 @@ export default function CameraPage() {
 
   const mode = localStorage.getItem('mode');
 
+  /* ─── Birthday Girl View ─── */
   if (mode === 'birthday_girl') {
     if (isLocked) {
       return (
-        <PageWrapper className="bg-[#FAF7F2]">
-          <div className="film-grain pointer-events-none fixed inset-0 z-40" />
-          <div className="px-6 pt-24 pb-12 max-w-md mx-auto min-h-[80vh] flex flex-col items-center justify-center text-center space-y-6">
+        <PageWrapper className="bg-[var(--color-parchment)]">
+          <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-md mx-auto min-h-[80vh] flex flex-col items-center justify-center text-center space-y-6">
+            <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)]">Sealed</span>
             <h1 className="text-3xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)]">
               sealed album
             </h1>
             <p className="text-sm text-[var(--color-dust)] font-[family-name:var(--font-body)] leading-relaxed">
               Photos and videos are being collected in your album. The gallery will unlock on your birthday morning.
             </p>
-            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-blush)] font-medium">
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-blush)]">
               Locked until July 5
             </p>
           </div>
@@ -184,93 +217,72 @@ export default function CameraPage() {
       );
     } else {
       return (
-        <PageWrapper className="bg-[#FAF7F2]">
-          <div className="film-grain pointer-events-none fixed inset-0 z-40" />
-          <div className="px-6 pt-24 pb-12 max-w-[860px] mx-auto space-y-8">
-            <div className="text-center space-y-2">
-              <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
-                Revealed
+        <PageWrapper className="bg-[var(--color-parchment)]">
+          <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-[860px] mx-auto">
+            <div className="text-center mb-16">
+              <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
+                Photos & videos collected
               </span>
               <h1 className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
                 shared gallery
               </h1>
             </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-8">
-              {photos.map((photo, i) => (
-                <div
-                  key={photo.id}
-                  className="polaroid"
-                  style={{ transform: `rotate(${-2 + Math.random() * 4}deg)` }}
-                >
-                  {photo.type === 'video' ? (
-                    <video
-                      src={photo.photo_url}
-                      controls
-                      playsInline
-                      className="w-full aspect-square object-cover"
-                    />
-                  ) : (
-                    <img
-                      src={photo.photo_url}
-                      alt="Memory"
-                      className="w-full aspect-square object-cover"
-                      loading="lazy"
-                    />
-                  )}
-                  <span className="polaroid-caption text-[10px] text-center block pt-1.5 text-[var(--color-dust)]">
-                    {photo.guest_name || 'guest'}
-                  </span>
-                </div>
-              ))}
-            </div>
-            {photos.length === 0 && (
-              <p className="text-center text-sm text-[var(--color-dust)] italic">No shared memories found.</p>
-            )}
+            <MediaGallery photos={photos} />
           </div>
         </PageWrapper>
       );
     }
   }
 
-  // Client-side validation helper
+  /* ─── Guest/Admin Upload Mode ─── */
   const validateFile = (file: File, type: 'photo' | 'video'): boolean => {
     if (!isRegistered) {
       setShowRegistration(true);
       return false;
     }
-
-    const photoLimit = 10 * 1024 * 1024; // 10MB
-    const videoLimit = 50 * 1024 * 1024; // 50MB
-
+    const photoLimit = 10 * 1024 * 1024;
+    const videoLimit = 50 * 1024 * 1024;
     if (type === 'photo' && file.size > photoLimit) {
       setErrorMessage('photos must be under 10MB');
       return false;
     }
-
     if (type === 'video' && file.size > videoLimit) {
       setErrorMessage('videos must be under 50MB');
       return false;
     }
-
     setErrorMessage(null);
     return true;
   };
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    if (!validateFile(file, 'photo')) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setCapturedImage(event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    // Single file -> show filter preview
+    if (files.length === 1) {
+      const file = files[0];
+      if (!validateFile(file, 'photo')) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setCapturedImage(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Multiple files -> upload directly without filter
+      setUploadQueue(files.length);
+      Array.from(files).forEach((file, idx) => {
+        if (!validateFile(file, 'photo')) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result as string;
+          const fileName = `${guestName || 'guest'}_${Date.now()}_${idx}_photo.jpg`;
+          uploadMedia(dataUrl, fileName, file.type || 'image/jpeg', false, 'none');
+        };
+        reader.readAsDataURL(file);
+      });
+    }
   };
 
-  // Perform upload using XMLHttpRequest to track progress
   const uploadMedia = (fileDataUrl: string, fileName: string, fileType: string, isVideo: boolean, filterId: string | null) => {
     setIsUploading(true);
     setUploadProgress(0);
@@ -279,7 +291,6 @@ export default function CameraPage() {
     xhr.open('POST', '/api/upload');
     xhr.setRequestHeader('Content-Type', 'application/json');
 
-    // Track upload progress
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
         const percentage = Math.round((event.loaded / event.total) * 100);
@@ -292,7 +303,6 @@ export default function CameraPage() {
         try {
           const uploadResult = JSON.parse(xhr.responseText);
           if (uploadResult.error) throw new Error(uploadResult.error);
-
           if (isSupabaseConfigured()) {
             await supabase.from('photos').insert([{
               guest_name: guestName,
@@ -302,7 +312,6 @@ export default function CameraPage() {
               type: isVideo ? 'video' : 'photo',
             }]);
           }
-
           setIsUploading(false);
           setUploadSuccess(true);
           setTimeout(() => setUploadSuccess(false), 3000);
@@ -334,9 +343,7 @@ export default function CameraPage() {
   const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!validateFile(file, 'video')) return;
-
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
@@ -353,18 +360,15 @@ export default function CameraPage() {
   };
 
   return (
-    <PageWrapper className="bg-[#FAF7F2]">
-      {/* Film grain */}
-      <div className="film-grain pointer-events-none fixed inset-0 z-40" />
-
-      {/* Full screen Success Confirmation Overlay */}
+    <PageWrapper className="bg-[var(--color-parchment)]">
+      {/* Success Overlay */}
       <AnimatePresence>
         {uploadSuccess && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#1A1614] text-[#FAF7F2]"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-ink)] text-[var(--color-cream)]"
           >
             <div className="text-center space-y-4">
               <h1 className="text-4xl font-light font-[family-name:var(--font-display)]">
@@ -385,15 +389,13 @@ export default function CameraPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#1A1614]/95 text-[#FAF7F2] p-8"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-ink)]/95 text-[var(--color-cream)] p-8"
           >
-            <div className="w-full max-w-xs text-center space-y-4">
+            <div className="w-full max-w-[320px] text-center space-y-4">
               <h3 className="text-xl font-light font-[family-name:var(--font-display)]">
                 sealing media in capsule
               </h3>
-              
-              {/* Progress track */}
-              <div className="w-full h-1 bg-[var(--color-dust)]/20 overflow-hidden rounded-full relative">
+              <div className="w-full h-1 bg-[var(--color-dust)]/20 overflow-hidden rounded-full">
                 <motion.div
                   className="h-full bg-[var(--color-blush)]"
                   style={{ width: `${uploadProgress}%` }}
@@ -407,27 +409,23 @@ export default function CameraPage() {
         )}
       </AnimatePresence>
 
-      <div className="px-6 pt-20 pb-8 max-w-[860px] mx-auto space-y-8">
+      <div className="px-6 md:px-8 pt-16 md:pt-24 pb-8 max-w-[860px] mx-auto">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-2"
+          className="text-center mb-16"
         >
-          <span className="text-xs uppercase tracking-[0.2em] font-medium text-[var(--color-dust)]">
-            Archive memories
+          <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
+            Leave a memory
           </span>
-          <h1
-            className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]"
-          >
+          <h1 className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
             album
           </h1>
         </motion.div>
 
         {errorMessage && (
-          <div
-            className="p-3 border border-[var(--color-blush)] text-[var(--color-blush)] text-xs text-center rounded-[4px] uppercase tracking-wider"
-          >
+          <div className="p-4 border border-[var(--color-blush)] text-[var(--color-blush)] text-xs text-center rounded-[4px] uppercase tracking-wider mb-8">
             {errorMessage}
           </div>
         )}
@@ -446,46 +444,47 @@ export default function CameraPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="space-y-8"
             >
-              {/* Ruled drag-drop containers grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Photo Target Frame (Polaroid representation) */}
+              {/* Centered dropzones */}
+              <div className="flex flex-col md:flex-row gap-6 items-center justify-center mb-16">
+                {/* Photo Dropzone */}
                 <div
                   onClick={() => photoInputRef.current?.click()}
-                  className="group flex flex-col items-center justify-center p-6 border-2 border-dashed border-[var(--color-dust)]/40 hover:border-[var(--color-blush)] bg-[var(--color-cream)] aspect-[4/5] rounded-[4px] cursor-pointer transition-colors text-center"
+                  className="group flex flex-col items-center justify-center border-2 border-dashed border-[var(--color-dust)]/40 hover:border-[var(--color-blush)] bg-[var(--color-cream)] rounded-[4px] cursor-pointer transition-colors text-center"
+                  style={{ width: '100%', maxWidth: '320px', aspectRatio: '4/5' }}
                 >
-                  <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
-                    <span className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] group-hover:text-[var(--color-ink)] transition-colors">
-                      photo upload
-                    </span>
-                    <p className="text-sm italic font-[family-name:var(--font-display)] text-[var(--color-dust)] max-w-[160px] mx-auto leading-relaxed">
-                      drop a photo here, or tap to choose
-                    </p>
-                  </div>
+                  <span className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] group-hover:text-[var(--color-ink)] transition-colors mb-4">
+                    photo upload
+                  </span>
+                  <p className="text-sm italic font-[family-name:var(--font-display)] text-[var(--color-dust)] max-w-[200px] leading-relaxed">
+                    drop photos here, or tap to choose
+                  </p>
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--color-dust)]/60 mt-4">
+                    select multiple
+                  </p>
                 </div>
 
-                {/* Video Target Frame */}
+                {/* Video Dropzone */}
                 <div
                   onClick={() => videoInputRef.current?.click()}
-                  className="group flex flex-col items-center justify-center p-6 border-2 border-dashed border-[var(--color-dust)]/40 hover:border-[var(--color-blush)] bg-[var(--color-cream)] aspect-[4/5] rounded-[4px] cursor-pointer transition-colors text-center"
+                  className="group flex flex-col items-center justify-center border-2 border-dashed border-[var(--color-dust)]/40 hover:border-[var(--color-blush)] bg-[var(--color-cream)] rounded-[4px] cursor-pointer transition-colors text-center"
+                  style={{ width: '100%', maxWidth: '320px', aspectRatio: '4/5' }}
                 >
-                  <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
-                    <span className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] group-hover:text-[var(--color-ink)] transition-colors">
-                      video upload
-                    </span>
-                    <p className="text-sm italic font-[family-name:var(--font-display)] text-[var(--color-dust)] max-w-[160px] mx-auto leading-relaxed">
-                      drop a video here, or tap to choose
-                    </p>
-                  </div>
+                  <span className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] group-hover:text-[var(--color-ink)] transition-colors mb-4">
+                    video upload
+                  </span>
+                  <p className="text-sm italic font-[family-name:var(--font-display)] text-[var(--color-dust)] max-w-[200px] leading-relaxed">
+                    drop a video here, or tap to choose
+                  </p>
                 </div>
               </div>
 
-              {/* Hidden file inputs */}
+              {/* Hidden file inputs — photos now accept multiple */}
               <input
                 ref={photoInputRef}
                 type="file"
                 accept="image/*"
+                multiple
                 onChange={handlePhotoSelect}
                 className="hidden"
               />
@@ -497,40 +496,13 @@ export default function CameraPage() {
                 className="hidden"
               />
 
-              {/* Shared items (Only visible after unlock) */}
+              {/* Gallery (after unlock) */}
               {!isLocked && photos.length > 0 && (
-                <div className="space-y-6 pt-8">
-                  <h2 className="text-xs uppercase tracking-[0.2em] font-semibold text-[var(--color-dust)] text-center">
+                <div className="mt-16">
+                  <h2 className="text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] text-center mb-8">
                     Shared Gallery
                   </h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {photos.map((photo, i) => (
-                      <div
-                        key={photo.id}
-                        className="polaroid"
-                        style={{ transform: `rotate(${-2 + Math.random() * 4}deg)` }}
-                      >
-                        {photo.type === 'video' ? (
-                          <video
-                            src={photo.photo_url}
-                            controls
-                            playsInline
-                            className="w-full aspect-square object-cover"
-                          />
-                        ) : (
-                          <img
-                            src={photo.photo_url}
-                            alt="Memory"
-                            className="w-full aspect-square object-cover"
-                            loading="lazy"
-                          />
-                        )}
-                        <span className="polaroid-caption text-[10px] text-center block pt-1.5 text-[var(--color-dust)]">
-                          {photo.guest_name || 'guest'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                  <MediaGallery photos={photos} />
                 </div>
               )}
             </motion.div>

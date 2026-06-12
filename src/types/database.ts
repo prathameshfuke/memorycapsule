@@ -24,13 +24,6 @@ export interface OneWord {
   created_at: string;
 }
 
-export interface QuizScore {
-  id: string;
-  guest_name: string;
-  score: number;
-  total: number;
-  created_at: string;
-}
 
 export interface GuestbookEntry {
   id: string;
