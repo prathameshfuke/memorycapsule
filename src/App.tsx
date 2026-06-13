@@ -34,6 +34,22 @@ function AutoPromptGuest({ children }: { children: React.ReactNode }) {
 }
 
 function AppContent() {
+  const { isRegistered } = useGuest();
+  const mode = localStorage.getItem('mode');
+
+  // If they logged in as a normal guest but haven't registered their name/relationship yet,
+  // we block the app entirely and show the registration page.
+  const needsRegistration = mode === 'guest' && !isRegistered;
+
+  if (needsRegistration) {
+    return (
+      <>
+        <FilmGrain />
+        <GuestRegistration force />
+      </>
+    );
+  }
+
   return (
     <>
       <FilmGrain />

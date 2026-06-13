@@ -3,7 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGuest } from '../../hooks/useGuest';
 import { RELATIONSHIPS } from '../../lib/constants';
 
-export default function GuestRegistration() {
+interface GuestRegistrationProps {
+  force?: boolean;
+}
+
+export default function GuestRegistration({ force = false }: GuestRegistrationProps) {
   const { showRegistration, setShowRegistration, registerGuest } = useGuest();
   const [name, setName] = useState('');
   const [relationship, setRelationship] = useState('');
@@ -14,16 +18,22 @@ export default function GuestRegistration() {
     registerGuest(name.trim(), relationship);
   };
 
+  const shouldShow = force || showRegistration;
+
   return (
     <AnimatePresence>
-      {showRegistration && (
+      {shouldShow && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[var(--color-ink)]/70 backdrop-blur-sm"
-          onClick={() => setShowRegistration(false)}
+          className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${
+            force
+              ? 'bg-[var(--color-parchment)]'
+              : 'bg-[var(--color-ink)]/70 backdrop-blur-sm'
+          }`}
+          onClick={force ? undefined : () => setShowRegistration(false)}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.98, y: 15 }}
@@ -34,13 +44,15 @@ export default function GuestRegistration() {
             className="w-full max-w-sm rounded-[4px] p-6 relative border border-[var(--color-dust)] bg-[var(--color-cream)] text-[var(--color-ink)]"
           >
             {/* Close button */}
-            <button
-              onClick={() => setShowRegistration(false)}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-[4px] text-lg cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)]"
-              aria-label="Close"
-            >
-              ×
-            </button>
+            {!force && (
+              <button
+                onClick={() => setShowRegistration(false)}
+                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-[4px] text-lg cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)]"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            )}
 
             {/* Header */}
             <div className="text-center mb-6 space-y-2">
