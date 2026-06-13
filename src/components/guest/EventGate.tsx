@@ -6,8 +6,8 @@ const MODE_KEY = 'mode';
 
 // SHA-256 hashes for admin codes
 const ADMIN_HASHES = [
-  '53b708cfbe20165b40cfd70f90765c9c1b3f9ff7ea44f494bf06517172081f2c', // "ADMINKASHISH"
-  '070b4be9d57a9ef387cbfa978a3c8bf5e3a89e9df92a5491f274cb7eb47702f3', // "ADMIN_SECRET"
+  'aa7463fd6034efb2a16d8c10d2f8238b8e7e930ff4865d2f93d6b40e0a31cbad', // "ADMINKASHISH"
+  'ac77ea236b6980230005ec9a5c96d7dff05cccf1eef3754dbaba5e00b1fdf4ff', // "ADMIN_SECRET"
 ];
 
 async function sha256(message: string): Promise<string> {
