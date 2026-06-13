@@ -95,7 +95,7 @@ function BeforeEveryone() {
           <span className="handwritten">the original</span>
         </Reveal>
         <Reveal className="story-copy" delay={0.18}>
-          <p>Every family album has<br />one photograph that survives<br />every cleanup.</p>
+          <p>Every family album has <br />one photograph that survives <br />every cleanup.</p>
           <p>This is one of them.</p>
         </Reveal>
       </div>

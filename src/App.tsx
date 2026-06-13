@@ -14,6 +14,7 @@ import MessagesPage from './pages/MessagesPage';
 import CameraPage from './pages/CameraPage';
 import CapsulePage from './pages/CapsulePage';
 import GamesPage from './pages/GamesPage';
+import MafiaPage from './pages/MafiaPage';
 import GuestbookPage from './pages/GuestbookPage';
 import { useEffect } from 'react';
 
@@ -49,6 +50,7 @@ function AppContent() {
             <Route path="/camera" element={<CameraPage />} />
             <Route path="/capsule" element={<CapsulePage />} />
             <Route path="/games" element={<GamesPage />} />
+            <Route path="/games/mafia" element={<MafiaPage />} />
             <Route path="/guestbook" element={<GuestbookPage />} />
           </Routes>
         </AnimatePresence>

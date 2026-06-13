@@ -256,6 +256,7 @@ export default function GamesPage() {
     { id: 'charades', title: 'Dumb Charades', desc: 'Act out Bollywood and Hollywood prompts for your team.' },
     { id: 'nhie', title: 'Never Have I Ever', desc: 'Read party-safe conversation prompts aloud.' },
     { id: 'meet', title: 'Meet Someone New', desc: 'Match randomly with another guest and start talking.' },
+    { id: 'mafia', title: 'Mafia', desc: 'A game of secrets and suspicion. Find the Mafia before they find you.' },
   ];
 
   return (
@@ -286,12 +287,12 @@ export default function GamesPage() {
                   </h1>
                 </div>
 
-                <div className="games-grid grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="games-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
                   {games.map((game) => (
                     <Card
                       key={game.id}
                       leftBorder
-                      onClick={() => setActiveGame(game.id)}
+                      onClick={() => game.id === 'mafia' ? navigate('/games/mafia') : setActiveGame(game.id)}
                       className="game-card group h-full flex flex-col justify-between transition-colors"
                     >
                       <div>
