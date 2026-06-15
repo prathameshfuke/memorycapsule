@@ -3,6 +3,7 @@ import Card from '../shared/Card';
 import Button from '../shared/Button';
 import Confetti from '../shared/Confetti';
 import type { MafiaPlayer, MafiaWinner } from '../../types/database';
+import { getGuestInfo } from '../../lib/constants';
 
 interface MafiaGameOverProps {
   players: MafiaPlayer[];
@@ -18,10 +19,6 @@ export default function MafiaGameOver({
   onPlayAgain,
 }: MafiaGameOverProps) {
   const isTownWin = winner === 'town';
-
-  const getInitials = (name: string) => {
-    return name ? name.charAt(0) : '?';
-  };
 
   return (
     <div className="mafia-gameover">
@@ -72,26 +69,31 @@ export default function MafiaGameOver({
             <h3 className="mafia-gameover-roles-heading">All Roles Revealed</h3>
             
             <div className="mafia-gameover-grid">
-              {players.map((player) => (
-                <Card
-                  key={player.id}
-                  className={`mafia-gameover-card ${player.role === 'mafia' ? 'mafia-gameover-card-mafia' : ''} ${!player.is_alive ? 'mafia-gameover-card-dead' : ''}`}
-                >
-                  <div className="mafia-player-avatar">
-                    {getInitials(player.guest_name)}
-                  </div>
-                  <span className="mafia-gameover-card-name">{player.guest_name}</span>
-                  <span
-                    className="mafia-gameover-card-role text-xs"
-                    style={{ color: player.role === 'mafia' ? 'var(--red)' : 'var(--charcoal)' }}
+              {players.map((player) => {
+                const guestInfo = getGuestInfo(player.guest_name);
+                return (
+                  <Card
+                    key={player.id}
+                    className={`mafia-gameover-card flex flex-col items-center justify-center gap-2 p-4 text-center ${
+                      player.role === 'mafia' ? 'mafia-gameover-card-mafia' : ''
+                    } ${!player.is_alive ? 'mafia-gameover-card-dead' : ''}`}
                   >
-                    {player.role ? player.role.charAt(0).toUpperCase() + player.role.slice(1) : 'Unknown'}
-                  </span>
-                  {!player.is_alive && (
-                    <span className="mafia-gameover-card-status">Eliminated</span>
-                  )}
-                </Card>
-              ))}
+                    <div className="mafia-player-avatar w-14 h-14 rounded-full overflow-hidden border border-[var(--color-dust)]/30 flex-shrink-0 flex items-center justify-center bg-[var(--color-cream)]">
+                      <img src={guestInfo.avatar} alt={guestInfo.name} className="w-full h-full object-cover" />
+                    </div>
+                    <span className="mafia-gameover-card-name text-xs font-semibold uppercase tracking-wider">{guestInfo.name}</span>
+                    <span
+                      className="mafia-gameover-card-role text-xs font-bold mt-1"
+                      style={{ color: player.role === 'mafia' ? 'var(--red)' : 'var(--charcoal)' }}
+                    >
+                      {player.role ? player.role.charAt(0).toUpperCase() + player.role.slice(1) : 'Unknown'}
+                    </span>
+                    {!player.is_alive && (
+                      <span className="mafia-gameover-card-status">Eliminated</span>
+                    )}
+                  </Card>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -99,3 +101,4 @@ export default function MafiaGameOver({
     </div>
   );
 }
+

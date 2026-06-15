@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGuest } from '../hooks/useGuest';
 import { useBirthdayLock } from '../hooks/useBirthdayLock';
-import { isCapsuleUnlocked } from '../lib/constants';
+import { isCapsuleUnlocked, getGuestInfo } from '../lib/constants';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { PHOTO_FILTERS } from '../lib/constants';
 import type { Photo } from '../types/database';
@@ -119,40 +119,52 @@ export function MediaGallery({ photos }: { photos: Photo[] }) {
   }
   return (
     <div
-      className="grid gap-2"
+      className="grid gap-4"
       style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}
     >
-      {photos.map((photo) => (
-        <div key={photo.id} className="relative rounded-[4px] overflow-hidden bg-[var(--color-cream)] border border-[var(--color-dust)]">
-          {photo.type === 'video' ? (
-            <>
-              <video
-                src={photo.photo_url}
-                controls
-                playsInline
-                className="w-full object-cover"
-                style={{ aspectRatio: '1/1' }}
-              />
-              {/* Play icon overlay */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-10 h-10 rounded-full bg-[var(--color-ink)]/70 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-[var(--color-cream)] ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
+      {photos.map((photo) => {
+        const guestInfo = getGuestInfo(photo.guest_name);
+        return (
+          <div key={photo.id} className="relative rounded-[4px] overflow-hidden bg-[var(--color-cream)] border border-[var(--color-dust)] group">
+            <div className="w-full h-full" style={{ aspectRatio: '1/1' }}>
+              {photo.type === 'video' ? (
+                <div className="relative w-full h-full">
+                  <video
+                    src={photo.photo_url}
+                    controls
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Play icon overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-10 h-10 rounded-full bg-[var(--color-ink)]/70 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-[var(--color-cream)] ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
+              ) : (
+                <img
+                  src={photo.photo_url}
+                  alt="Memory"
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              )}
+            </div>
+            {/* Uploader Pill Overlay */}
+            <div className="absolute bottom-2 left-2 right-2 bg-[var(--color-ink)]/75 backdrop-blur-[2px] rounded-[4px] px-2 py-1.5 flex items-center gap-1.5 border border-white/10">
+              <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center bg-[var(--color-cream)] border border-white/20">
+                <img src={guestInfo.avatar} alt={guestInfo.name} className="w-full h-full object-cover" />
               </div>
-            </>
-          ) : (
-            <img
-              src={photo.photo_url}
-              alt="Memory"
-              className="w-full object-cover"
-              style={{ aspectRatio: '1/1' }}
-              loading="lazy"
-            />
-          )}
-        </div>
-      ))}
+              <span className="text-[9px] uppercase tracking-wider text-[var(--color-cream)] font-semibold truncate">
+                {guestInfo.name}
+              </span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

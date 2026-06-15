@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useGuest } from '../hooks/useGuest';
 import { useBirthdayLock } from '../hooks/useBirthdayLock';
-import { isCapsuleUnlocked } from '../lib/constants';
+import { isCapsuleUnlocked, getGuestInfo } from '../lib/constants';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { GuestbookEntry } from '../types/database';
 import PageWrapper from '../components/layout/PageWrapper';
@@ -31,7 +31,12 @@ export function GuestbookEntries({ entries }: { entries: GuestbookEntry[] }) {
               </p>
             </div>
             <div className="flex items-center justify-between mt-6 text-[var(--color-dust)] border-t border-[var(--color-dust)]/10 pt-4 text-[10px] uppercase tracking-[0.1em]">
-              <span>— {entry.guest_name || 'Anonymous'}</span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 rounded-full overflow-hidden border border-[var(--color-dust)]/20 flex-shrink-0 flex items-center justify-center bg-[var(--color-cream)]">
+                  <img src={getGuestInfo(entry.guest_name).avatar} alt={entry.guest_name} className="w-full h-full object-cover" />
+                </div>
+                <span>— {getGuestInfo(entry.guest_name).name}</span>
+              </div>
               <span className="tabular-nums">{new Date(entry.created_at).toLocaleDateString()}</span>
             </div>
           </Card>

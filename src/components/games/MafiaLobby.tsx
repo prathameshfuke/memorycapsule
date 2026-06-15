@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
 import type { MafiaPlayer } from '../../types/database';
+import { getGuestInfo } from '../../lib/constants';
 
 interface MafiaLobbyProps {
   players: MafiaPlayer[];
@@ -28,10 +29,6 @@ export default function MafiaLobby({
 }: MafiaLobbyProps) {
   const minPlayers = 4;
   const canStart = playerCount >= minPlayers;
-
-  const getInitials = (name: string) => {
-    return name ? name.charAt(0) : '?';
-  };
 
   return (
     <div className="mafia-lobby">
@@ -81,26 +78,30 @@ export default function MafiaLobby({
           <h3 className="mafia-lobby-players-heading">Joined Guests</h3>
           
           <div className="mafia-lobby-players-grid">
-            {players.map((player) => (
-              <motion.div
-                key={player.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="w-full"
-              >
-                <Card className="mafia-lobby-player-card">
-                  <div className="mafia-lobby-player-inner">
-                    <div className="mafia-player-avatar">
-                      {getInitials(player.guest_name)}
+            {players.map((player) => {
+              const guestInfo = getGuestInfo(player.guest_name);
+              return (
+                <motion.div
+                  key={player.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="w-full"
+                >
+                  <Card className="mafia-lobby-player-card">
+                    <div className="mafia-lobby-player-inner flex items-center gap-3">
+                      <div className="mafia-player-avatar w-10 h-10 rounded-full overflow-hidden border border-[var(--color-dust)]/30 flex-shrink-0 flex items-center justify-center bg-[var(--color-cream)]">
+                        <img src={guestInfo.avatar} alt={guestInfo.name} className="w-full h-full object-cover" />
+                      </div>
+                      <span className="mafia-lobby-player-name font-medium">{guestInfo.name}</span>
+                      {player.is_host && (
+                        <span className="mafia-lobby-host-badge">host</span>
+                      )}
                     </div>
-                    <span className="mafia-lobby-player-name">{player.guest_name}</span>
-                    {player.is_host && (
-                      <span className="mafia-lobby-host-badge">host</span>
-                    )}
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
+                  </Card>
+                </motion.div>
+              );
+            })}
+
 
             {playerCount === 0 && (
               <p className="mafia-lobby-empty">

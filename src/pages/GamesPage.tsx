@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { CHARADES_PROMPTS, NEVER_HAVE_I_EVER, MEET_PROMPTS } from '../lib/constants';
+import { CHARADES_PROMPTS, NEVER_HAVE_I_EVER, MEET_PROMPTS, GUESTS, getGuestInfo } from '../lib/constants';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useGuest } from '../hooks/useGuest';
 import PageWrapper from '../components/layout/PageWrapper';
 import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
@@ -27,7 +28,7 @@ function DumbCharades({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div className="max-w-[860px] mx-auto px-6 md:px-8">
+    <div className="game-view-container">
       <button
         onClick={onBack}
         className="text-xs uppercase tracking-[0.2em] mb-10 cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)] transition-colors"
@@ -35,7 +36,7 @@ function DumbCharades({ onBack }: { onBack: () => void }) {
         ← Back to Games
       </button>
 
-      <div className="text-center mb-10">
+      <div className="text-centered" style={{ marginBottom: '40px' }}>
         <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
           Act it out
         </span>
@@ -47,7 +48,7 @@ function DumbCharades({ onBack }: { onBack: () => void }) {
       {!prompt ? (
         <div className="grid grid-cols-2 gap-6">
           {categories.map((cat) => (
-            <Card key={cat} onClick={() => generatePrompt(cat)} className="group text-center">
+            <Card key={cat} onClick={() => generatePrompt(cat)} className="group text-centered">
               <span className="text-xs uppercase tracking-[0.1em] text-[var(--color-ink)] group-hover:text-[var(--color-blush)] transition-colors">
                 {cat}
               </span>
@@ -55,7 +56,7 @@ function DumbCharades({ onBack }: { onBack: () => void }) {
           ))}
         </div>
       ) : (
-        <div className="text-center space-y-8">
+        <div className="text-centered space-y-8">
           <p className="text-[10px] uppercase tracking-widest text-[var(--color-dust)]">
             Category: {category}
           </p>
@@ -109,7 +110,7 @@ function NeverHaveIEverGame({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div className="max-w-[860px] mx-auto px-6 md:px-8">
+    <div className="game-view-container">
       <button
         onClick={onBack}
         className="text-xs uppercase tracking-[0.2em] mb-10 cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)] transition-colors"
@@ -117,7 +118,7 @@ function NeverHaveIEverGame({ onBack }: { onBack: () => void }) {
         ← Back to Games
       </button>
 
-      <div className="text-center mb-10">
+      <div className="text-centered" style={{ marginBottom: '40px' }}>
         <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
           Read aloud
         </span>
@@ -132,7 +133,7 @@ function NeverHaveIEverGame({ onBack }: { onBack: () => void }) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
       >
-        <Card className="py-16 px-8 text-center mb-8">
+        <Card className="py-16 px-8 text-centered mb-8">
           <p className="text-xl font-light leading-relaxed font-[family-name:var(--font-display)] text-[var(--color-ink)]">
             {NEVER_HAVE_I_EVER[currentIndex]}
           </p>
@@ -194,7 +195,7 @@ function MeetSomeoneGame({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div className="max-w-[860px] mx-auto px-6 md:px-8">
+    <div className="game-view-container">
       <button
         onClick={onBack}
         className="text-xs uppercase tracking-[0.2em] mb-10 cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)] transition-colors"
@@ -202,14 +203,14 @@ function MeetSomeoneGame({ onBack }: { onBack: () => void }) {
         ← Back to Games
       </button>
 
-      <div className="text-center mb-10">
-        <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
+      <div className="text-centered" style={{ marginBottom: '40px' }}>
+        <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)]" style={{ marginBottom: '8px' }}>
           Mingle
         </span>
         <h2 className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
           meet someone new
         </h2>
-        <p className="text-sm text-[var(--color-dust)] max-w-sm mx-auto mt-4">
+        <p className="text-centered" style={{ fontSize: '14px', color: 'var(--color-dust)', maxWidth: '384px', margin: '16px auto 0' }}>
           Get randomly paired with another guest and start a conversation.
         </p>
       </div>
@@ -222,14 +223,14 @@ function MeetSomeoneGame({ onBack }: { onBack: () => void }) {
         >
           <div className="flex gap-6 justify-center">
             {matchedGuests.map((g, idx) => (
-              <Card key={idx} className="flex-1 text-center">
+              <Card key={idx} className="flex-1 text-centered">
                 <p className="text-[10px] uppercase tracking-wider text-[var(--color-dust)] mb-1">Guest</p>
                 <p className="text-sm text-[var(--color-ink)]">{g.name}</p>
               </Card>
             ))}
           </div>
 
-          <Card className="text-center space-y-2">
+          <Card className="text-centered space-y-2">
             <p className="text-[10px] uppercase tracking-widest text-[var(--color-dust)]">
               Conversation Starter
             </p>
@@ -247,6 +248,265 @@ function MeetSomeoneGame({ onBack }: { onBack: () => void }) {
   );
 }
 
+/* ─── Guess Who & Most Likely To Voting Component ─── */
+const GUESS_WHO_QUESTIONS = [
+  { id: 'late', text: 'Who is most likely to arrive late?' },
+  { id: 'foodie', text: 'Who is the biggest foodie?' },
+  { id: 'laugh', text: 'Who has the loudest, most recognizable laugh?' },
+  { id: 'lost', text: 'Who is most likely to get lost in a straight street?' },
+  { id: 'dramatic', text: 'Who is the most dramatic in the group?' },
+  { id: 'parent', text: 'Who acts as the "mom" or "dad" of the group?' },
+  { id: 'shopaholic', text: 'Who is the secret shopaholic?' },
+];
+
+const MOST_LIKELY_QUESTIONS = [
+  { id: 'earthquake', text: 'Most likely to sleep through an earthquake?' },
+  { id: 'cry', text: 'Most likely to cry at a happy/romantic movie?' },
+  { id: 'dare', text: 'Most likely to get a tattoo on a random dare?' },
+  { id: 'billionaire', text: 'Most likely to become a billionaire first?' },
+  { id: 'spend', text: 'Most likely to spend all their money in a single day?' },
+  { id: 'stranger', text: 'Most likely to start a deep conversation with a random stranger?' },
+  { id: 'trip', text: 'Most likely to trip over absolutely nothing?' },
+];
+
+function InteractiveVotingGame({
+  gameType,
+  title,
+  eyebrow,
+  questions,
+  onBack,
+}: {
+  gameType: 'guess_who' | 'most_likely';
+  title: string;
+  eyebrow: string;
+  questions: { id: string; text: string }[];
+  onBack: () => void;
+}) {
+  const { guestName, isRegistered, setShowRegistration } = useGuest();
+  const [qIndex, setQIndex] = useState(0);
+  const [votes, setVotes] = useState<Record<string, number>>({});
+  const [myVote, setMyVote] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const question = questions[qIndex];
+
+  // Fetch votes from Supabase or Fallback
+  const fetchVotes = useCallback(async () => {
+    if (!question) return;
+
+    if (!isSupabaseConfigured()) {
+      // Mock Local Simulation
+      const mockVotes: Record<string, number> = {};
+      let total = 0;
+      GUESTS.forEach((g) => {
+        // Hash based mock distribution to keep it stable per question
+        let hash = 0;
+        const comb = g.name + question.id;
+        for (let i = 0; i < comb.length; i++) {
+          hash = comb.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const amt = (Math.abs(hash) % 5) + 1;
+        mockVotes[g.name] = amt;
+        total += amt;
+      });
+
+      const stored = localStorage.getItem(`vote:${gameType}:${question.id}`);
+      if (stored) {
+        mockVotes[stored] = (mockVotes[stored] || 0) + 1;
+        setMyVote(stored);
+      } else {
+        setMyVote(null);
+      }
+      setVotes(mockVotes);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('game_votes')
+        .select('voter_name, target_name')
+        .eq('game_type', gameType)
+        .eq('question_id', question.id);
+
+      if (error) throw error;
+
+      if (data) {
+        const counts: Record<string, number> = {};
+        let mine: string | null = null;
+        data.forEach((v: any) => {
+          counts[v.target_name] = (counts[v.target_name] || 0) + 1;
+          if (v.voter_name === guestName) {
+            mine = v.target_name;
+          }
+        });
+        setVotes(counts);
+        setMyVote(mine);
+      }
+    } catch (err) {
+      console.error('Failed to fetch game votes:', err);
+    }
+  }, [gameType, question, guestName]);
+
+  useEffect(() => {
+    fetchVotes();
+
+    if (!isSupabaseConfigured() || !question) return;
+
+    // Realtime changes listener
+    const channel = supabase
+      .channel(`game_votes:${gameType}:${question.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'game_votes',
+          filter: `game_type=eq.${gameType}`,
+        },
+        () => {
+          fetchVotes();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [question, fetchVotes, gameType]);
+
+  const castVote = async (targetName: string) => {
+    if (!isRegistered) {
+      setShowRegistration(true);
+      return;
+    }
+
+    setIsLoading(true);
+
+    if (!isSupabaseConfigured()) {
+      localStorage.setItem(`vote:${gameType}:${question.id}`, targetName);
+      setMyVote(targetName);
+      setVotes((prev) => ({
+        ...prev,
+        [targetName]: (prev[targetName] || 0) + 1,
+      }));
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('game_votes').insert([
+        {
+          game_type: gameType,
+          question_id: question.id,
+          voter_name: guestName,
+          target_name: targetName,
+        },
+      ]);
+
+      if (error) {
+        if (error.code === '23505') {
+          console.log('Already voted');
+        } else {
+          throw error;
+        }
+      }
+      fetchVotes();
+    } catch (err) {
+      console.error('Error casting vote:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNext = () => {
+    setQIndex((prev) => (prev + 1) % questions.length);
+  };
+
+  const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
+
+  return (
+    <div className="game-view-container">
+      <button
+        onClick={onBack}
+        className="text-xs uppercase tracking-[0.2em] mb-10 cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)] transition-colors"
+      >
+        ← Back to Games
+      </button>
+
+      <div className="text-centered" style={{ marginBottom: '40px' }}>
+        <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
+          {eyebrow}
+        </span>
+        <h2 className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
+          {title}
+        </h2>
+      </div>
+
+      <Card className="py-8 px-6 text-centered mb-8 bg-[var(--color-cream)]">
+        <p className="text-xl md:text-2xl font-light leading-relaxed font-[family-name:var(--font-display)] text-[var(--color-ink)]">
+          "{question.text}"
+        </p>
+      </Card>
+
+      <div className="mb-8 grid grid-cols-2 gap-4">
+        {GUESTS.map((guest) => {
+          const info = getGuestInfo(guest.id);
+          const hasVoted = myVote !== null;
+          const isMySelection = myVote === info.name;
+          const voteCount = votes[info.name] || 0;
+          const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+
+          return (
+            <Card
+              key={guest.id}
+              onClick={hasVoted || isLoading ? undefined : () => castVote(info.name)}
+              className={`relative flex flex-col items-center justify-between p-3 border text-centered transition-all duration-300 min-h-[135px] ${
+                hasVoted
+                  ? isMySelection
+                    ? 'border-[var(--color-crimson)] bg-[var(--color-cream)] scale-[1.02]'
+                    : 'border-[var(--color-dust)]/40 opacity-75'
+                  : 'border-[var(--color-dust)] hover:border-[var(--color-ember)] cursor-pointer active:scale-[0.98]'
+              }`}
+            >
+              {/* Avatar Frame */}
+              <div className="w-14 h-14 rounded-full overflow-hidden border border-[var(--color-dust)]/40 mb-2 flex items-center justify-center bg-[var(--color-cream)]">
+                <img src={info.avatar} alt={info.name} className="w-full h-full object-cover" />
+              </div>
+
+              {/* Name */}
+              <span className="text-xs uppercase tracking-wider font-semibold text-[var(--color-ink)] mb-1">
+                {info.name}
+              </span>
+
+              {/* Vote result progress */}
+              {hasVoted && (
+                <div className="mt-2 w-full">
+                  <div className="w-full bg-[var(--color-dust)]/20 h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${isMySelection ? 'bg-[var(--color-crimson)]' : 'bg-[var(--color-dust)]'}`}
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center mt-1 text-[9px] uppercase tracking-wider text-[var(--color-dust)]">
+                    <span>
+                      {voteCount} vote{voteCount !== 1 ? 's' : ''}
+                    </span>
+                    <span className="font-bold">{percentage}%</span>
+                  </div>
+                </div>
+              )}
+            </Card>
+          );
+        })}
+      </div>
+
+      <Button variant="primary" fullWidth onClick={handleNext} disabled={isLoading}>
+        Next Question →
+      </Button>
+    </div>
+  );
+}
+
 /* ─── Games Hub ─── */
 export default function GamesPage() {
   const navigate = useNavigate();
@@ -257,6 +517,9 @@ export default function GamesPage() {
     { id: 'nhie', title: 'Never Have I Ever', desc: 'Read party-safe conversation prompts aloud.' },
     { id: 'meet', title: 'Meet Someone New', desc: 'Match randomly with another guest and start talking.' },
     { id: 'mafia', title: 'Mafia', desc: 'A game of secrets and suspicion. Find the Mafia before they find you.' },
+    { id: 'cat-copy', title: 'Cat Copy Challenge', desc: 'A cat image flashes on screen. Memorize it. Recreate it. Everyone votes.' },
+    { id: 'guess_who', title: 'Guess Who', desc: 'Who fits the description best? Guess and vote on guest cards!' },
+    { id: 'most_likely', title: 'Most Likely To', desc: 'Vote on which guest is most likely to do outrageous things.' },
   ];
 
   return (
@@ -264,21 +527,41 @@ export default function GamesPage() {
       <div className="w-full">
         <AnimatePresence mode="wait">
           {activeGame === 'charades' ? (
-            <motion.div key="charades" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="charades" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <DumbCharades onBack={() => setActiveGame(null)} />
             </motion.div>
           ) : activeGame === 'nhie' ? (
-            <motion.div key="nhie" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="nhie" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <NeverHaveIEverGame onBack={() => setActiveGame(null)} />
             </motion.div>
           ) : activeGame === 'meet' ? (
-            <motion.div key="meet" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="meet" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <MeetSomeoneGame onBack={() => setActiveGame(null)} />
             </motion.div>
+          ) : activeGame === 'guess_who' ? (
+            <motion.div key="guess_who" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <InteractiveVotingGame
+                gameType="guess_who"
+                title="guess who"
+                eyebrow="Suspicion"
+                questions={GUESS_WHO_QUESTIONS}
+                onBack={() => setActiveGame(null)}
+              />
+            </motion.div>
+          ) : activeGame === 'most_likely' ? (
+            <motion.div key="most_likely" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <InteractiveVotingGame
+                gameType="most_likely"
+                title="most likely to"
+                eyebrow="Predictions"
+                questions={MOST_LIKELY_QUESTIONS}
+                onBack={() => setActiveGame(null)}
+              />
+            </motion.div>
           ) : (
-            <motion.div key="hub" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="hub" className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <div className="page-container games-hub">
-                <div className="games-heading text-center">
+                <div className="games-heading text-centered">
                   <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
                     Play together
                   </span>
@@ -292,7 +575,7 @@ export default function GamesPage() {
                     <Card
                       key={game.id}
                       leftBorder
-                      onClick={() => game.id === 'mafia' ? navigate('/games/mafia') : setActiveGame(game.id)}
+                      onClick={() => game.id === 'mafia' ? navigate('/games/mafia') : game.id === 'cat-copy' ? navigate('/games/cat-copy') : setActiveGame(game.id)}
                       className="game-card group h-full flex flex-col justify-between transition-colors"
                     >
                       <div>

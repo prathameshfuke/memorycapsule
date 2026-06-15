@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
 import type { MafiaPlayer, MafiaNightResult } from '../../types/database';
+import { getGuestInfo } from '../../lib/constants';
 
 interface MafiaDayPhaseProps {
   players: MafiaPlayer[];
@@ -43,10 +44,6 @@ export default function MafiaDayPhase({
     return `${m}:${String(s).padStart(2, '0')}`;
   };
 
-  const getInitials = (name: string) => {
-    return name ? name.charAt(0) : '?';
-  };
-
   return (
     <div className="mafia-day">
       <div className="mafia-page-container">
@@ -65,7 +62,7 @@ export default function MafiaDayPhase({
                 <Card className={`mafia-day-result-card ${nightResult.killed_player_id ? 'mafia-day-result-death' : 'mafia-day-result-safe'}`}>
                   {nightResult.killed_player_id ? (
                     <p className="mafia-day-result-text">
-                      Last night, <strong>{nightResult.killed_player_name}</strong> was eliminated.
+                      Last night, <strong>{getGuestInfo(nightResult.killed_player_name).name}</strong> was eliminated.
                     </p>
                   ) : nightResult.saved ? (
                     <p className="mafia-day-result-text">
@@ -104,22 +101,28 @@ export default function MafiaDayPhase({
               <>
                 <span className="mafia-eyebrow block text-left mb-2">Select Suspect</span>
                 <div className="mafia-player-grid">
-                  {alivePlayers.map((player) => (
-                    <motion.div key={player.id} whileTap={{ scale: 0.97 }} className="w-full">
-                      <Card
-                        onClick={() => setSelectedTarget(player.id)}
-                        className={`mafia-player-card mafia-vote-card ${selectedTarget === player.id ? 'mafia-player-card-selected' : ''}`}
-                      >
-                        <div className="mafia-player-avatar">
-                          {getInitials(player.guest_name)}
-                        </div>
-                        <span className="mafia-player-card-name">{player.guest_name}</span>
-                        {votes[player.id] && (
-                          <span className="mafia-vote-badge">{votes[player.id]}</span>
-                        )}
-                      </Card>
-                    </motion.div>
-                  ))}
+                  {alivePlayers.map((player) => {
+                    const guestInfo = getGuestInfo(player.guest_name);
+                    const isSelected = selectedTarget === player.id;
+                    return (
+                      <motion.div key={player.id} whileTap={{ scale: 0.97 }} className="w-full">
+                        <Card
+                          onClick={() => setSelectedTarget(player.id)}
+                          className={`mafia-player-card mafia-vote-card relative flex flex-col items-center justify-center gap-2 p-4 text-center ${
+                            isSelected ? 'mafia-player-card-selected' : ''
+                          }`}
+                        >
+                          <div className="mafia-player-avatar w-14 h-14 rounded-full overflow-hidden border border-[var(--color-dust)]/30 flex-shrink-0 flex items-center justify-center bg-[var(--color-cream)]">
+                            <img src={guestInfo.avatar} alt={guestInfo.name} className="w-full h-full object-cover" />
+                          </div>
+                          <span className="mafia-player-card-name text-xs font-semibold uppercase tracking-wider">{guestInfo.name}</span>
+                          {votes[player.id] && (
+                            <span className="mafia-vote-badge">{votes[player.id]}</span>
+                          )}
+                        </Card>
+                      </motion.div>
+                    );
+                  })}
                 </div>
 
                 <Button
@@ -143,17 +146,20 @@ export default function MafiaDayPhase({
                 <span className="mafia-eyebrow block text-left mb-4">Current Vote Count</span>
                 {/* Show live vote counts */}
                 <div className="mafia-player-grid">
-                  {players.filter(p => p.is_alive).map((player) => (
-                    <Card key={player.id} className="mafia-player-card mafia-vote-card">
-                      <div className="mafia-player-avatar">
-                        {getInitials(player.guest_name)}
-                      </div>
-                      <span className="mafia-player-card-name">{player.guest_name}</span>
-                      {votes[player.id] && (
-                        <span className="mafia-vote-badge">{votes[player.id]}</span>
-                      )}
-                    </Card>
-                  ))}
+                  {players.filter(p => p.is_alive).map((player) => {
+                    const guestInfo = getGuestInfo(player.guest_name);
+                    return (
+                      <Card key={player.id} className="mafia-player-card mafia-vote-card relative flex flex-col items-center justify-center gap-2 p-4 text-center">
+                        <div className="mafia-player-avatar w-14 h-14 rounded-full overflow-hidden border border-[var(--color-dust)]/30 flex-shrink-0 flex items-center justify-center bg-[var(--color-cream)]">
+                          <img src={guestInfo.avatar} alt={guestInfo.name} className="w-full h-full object-cover" />
+                        </div>
+                        <span className="mafia-player-card-name text-xs font-semibold uppercase tracking-wider">{guestInfo.name}</span>
+                        {votes[player.id] && (
+                          <span className="mafia-vote-badge">{votes[player.id]}</span>
+                        )}
+                      </Card>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -163,3 +169,4 @@ export default function MafiaDayPhase({
     </div>
   );
 }
+

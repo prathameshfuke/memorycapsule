@@ -202,3 +202,76 @@ export const MEET_PROMPTS = [
   "What's the best advice she's ever given you?",
   "What would she say if she saw you two talking right now?",
 ];
+
+/* ─── Guests List & Info Helper ─── */
+export interface Guest {
+  id: string;
+  name: string;
+  avatar?: string;
+}
+
+export const GUESTS: Guest[] = [
+  { id: 'prathamesh', name: 'Prathamesh', avatar: '/avatars/prathamesh.jpeg' },
+  { id: 'kashish', name: 'Kashish', avatar: '/avatars/kashish.jpeg' },
+  { id: 'karan', name: 'Karan', avatar: '/avatars/karan.jpeg' },
+  { id: 'kanaka', name: 'Kanaka', avatar: '/avatars/kanaka.jpeg' },
+  { id: 'vivek', name: 'Vivek', avatar: '/avatars/vivek.jpeg' },
+  { id: 'rugved', name: 'Rugved' },
+  { id: 'harsh', name: 'Harsh' },
+  { id: 'nikhil', name: 'Nikhil' },
+  { id: 'nidhi', name: 'Nidhi' },
+  { id: 'shreya', name: 'Shreya' },
+  { id: 'kevali', name: 'Kevali' },
+  { id: 'satyarth', name: 'Satyarth' },
+];
+
+export function getGuestInfo(nameOrId: string | null): { id: string; name: string; avatar: string } {
+  if (!nameOrId) {
+    return {
+      id: 'anonymous',
+      name: 'Anonymous',
+      avatar: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%239C8A7C"/><text x="50" y="58" font-family="sans-serif" font-size="40" fill="%23FBF6EF" text-anchor="middle">?</text></svg>`,
+    };
+  }
+
+  const normalized = nameOrId.trim().toLowerCase();
+  const guest = GUESTS.find(g => g.id === normalized || g.name.toLowerCase() === normalized);
+
+  if (guest) {
+    if (guest.avatar) {
+      return { id: guest.id, name: guest.name, avatar: guest.avatar };
+    }
+    // Generate dynamic premium silhouette/initial SVG
+    const initial = guest.name.charAt(0).toUpperCase();
+    const colors = ['#8C4A3A', '#C9A45C', '#C3232B', '#9C8A7C', '#1C1410'];
+    let hash = 0;
+    for (let i = 0; i < guest.name.length; i++) {
+      hash = guest.name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const color = colors[Math.abs(hash) % colors.length];
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="${color.replace('#', '%23')}"/><text x="50" y="58" font-family="'Cormorant Garamond', serif" font-weight="300" font-size="40" font-style="italic" fill="%23FBF6EF" text-anchor="middle">${initial}</text></svg>`;
+    
+    return {
+      id: guest.id,
+      name: guest.name,
+      avatar: `data:image/svg+xml;utf8,${svg}`,
+    };
+  }
+
+  // Fallback for custom entries
+  const initial = nameOrId.trim().charAt(0).toUpperCase() || '?';
+  const colors = ['#8C4A3A', '#C9A45C', '#C3232B', '#9C8A7C', '#1C1410'];
+  let hash = 0;
+  for (let i = 0; i < nameOrId.length; i++) {
+    hash = nameOrId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const color = colors[Math.abs(hash) % colors.length];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="${color.replace('#', '%23')}"/><text x="50" y="58" font-family="'Cormorant Garamond', serif" font-weight="300" font-size="40" font-style="italic" fill="%23FBF6EF" text-anchor="middle">${initial}</text></svg>`;
+  
+  return {
+    id: normalized,
+    name: nameOrId.trim(),
+    avatar: `data:image/svg+xml;utf8,${svg}`,
+  };
+}
+

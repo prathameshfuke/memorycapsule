@@ -15,7 +15,8 @@ export default function PageWrapper({ children, className = '' }: PageWrapperPro
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className={`app-page min-h-[100dvh] pb-24 ${isDark ? 'app-page-dark' : ''} ${className}`}
+      className={`app-page ${isDark ? 'app-page-dark' : ''} ${className}`}
+      style={{ width: '100%', minHeight: '100dvh', paddingBottom: '96px' }}
     >
       {children}
     </motion.div>

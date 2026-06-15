@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBirthdayLock } from '../hooks/useBirthdayLock';
-import { isCapsuleUnlocked, isFutureLettersUnlocked, CAPSULE_UNLOCK } from '../lib/constants';
+import { isCapsuleUnlocked, isFutureLettersUnlocked, CAPSULE_UNLOCK, getGuestInfo } from '../lib/constants';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Message, OneWord, Photo, GuestbookEntry } from '../types/database';
 import PageWrapper from '../components/layout/PageWrapper';
@@ -264,13 +264,18 @@ export default function CapsulePage() {
               style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}
             >
               {messages.map((msg) => (
-                <Card key={msg.id}>
+                <Card key={msg.id} className="flex flex-col justify-between">
                   <p className="text-base leading-relaxed text-[var(--color-ink)] italic font-[family-name:var(--font-display)] font-light">
                     "{msg.message}"
                   </p>
-                  <p className="text-xs mt-4 text-right text-[var(--color-dust)] uppercase tracking-[0.05em]">
-                    — {msg.guest_name || 'anonymous'}
-                  </p>
+                  <div className="flex items-center justify-end gap-2 mt-6 border-t border-[var(--color-dust)]/10 pt-4">
+                    <div className="w-6 h-6 rounded-full overflow-hidden border border-[var(--color-dust)]/20 flex items-center justify-center bg-[var(--color-cream)]">
+                      <img src={getGuestInfo(msg.guest_name).avatar} alt={msg.guest_name} className="w-full h-full object-cover" />
+                    </div>
+                    <p className="text-xs text-[var(--color-dust)] uppercase tracking-[0.05em] font-semibold">
+                      — {getGuestInfo(msg.guest_name).name}
+                    </p>
+                  </div>
                 </Card>
               ))}
               {messages.length === 0 && (
@@ -331,13 +336,18 @@ export default function CapsulePage() {
                   style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}
                 >
                   {futureLetters.map((msg) => (
-                    <Card key={msg.id}>
+                    <Card key={msg.id} className="flex flex-col justify-between">
                       <p className="text-base leading-relaxed text-[var(--color-ink)] italic font-[family-name:var(--font-display)] font-light">
                         "{msg.message}"
                       </p>
-                      <p className="text-xs mt-4 text-right text-[var(--color-dust)] uppercase tracking-[0.05em]">
-                        — {msg.guest_name || 'anonymous'}
-                      </p>
+                      <div className="flex items-center justify-end gap-2 mt-6 border-t border-[var(--color-dust)]/10 pt-4">
+                        <div className="w-6 h-6 rounded-full overflow-hidden border border-[var(--color-dust)]/20 flex items-center justify-center bg-[var(--color-cream)]">
+                          <img src={getGuestInfo(msg.guest_name).avatar} alt={msg.guest_name} className="w-full h-full object-cover" />
+                        </div>
+                        <p className="text-xs text-[var(--color-dust)] uppercase tracking-[0.05em] font-semibold">
+                          — {getGuestInfo(msg.guest_name).name}
+                        </p>
+                      </div>
                     </Card>
                   ))}
                   {futureLetters.length === 0 && (

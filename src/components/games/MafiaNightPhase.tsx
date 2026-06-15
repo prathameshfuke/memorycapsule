@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
 import type { MafiaPlayer, MafiaRole } from '../../types/database';
+import { getGuestInfo } from '../../lib/constants';
 
 interface MafiaNightPhaseProps {
   myRole: MafiaRole;
@@ -46,10 +47,6 @@ export default function MafiaNightPhase({
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m}:${String(s).padStart(2, '0')}`;
-  };
-
-  const getInitials = (name: string) => {
-    return name ? name.charAt(0) : '?';
   };
 
   const NIGHT_INSTRUCTIONS: Record<string, string> = {
@@ -146,22 +143,27 @@ export default function MafiaNightPhase({
           <div className="mafia-night-action">
             <span className="mafia-eyebrow block text-left mb-4">Select Target Player</span>
             <div className="mafia-player-grid">
-              {alivePlayers.map((player) => (
-                <motion.div
-                  key={player.id}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  <Card
-                    onClick={() => setSelectedTarget(player.id)}
-                    className={`mafia-player-card ${selectedTarget === player.id ? 'mafia-player-card-selected' : ''}`}
+              {alivePlayers.map((player) => {
+                const guestInfo = getGuestInfo(player.guest_name);
+                return (
+                  <motion.div
+                    key={player.id}
+                    whileTap={{ scale: 0.97 }}
                   >
-                    <div className="mafia-player-avatar">
-                      {getInitials(player.guest_name)}
-                    </div>
-                    <span className="mafia-player-card-name">{player.guest_name}</span>
-                  </Card>
-                </motion.div>
-              ))}
+                    <Card
+                      onClick={() => setSelectedTarget(player.id)}
+                      className={`mafia-player-card flex flex-col items-center justify-center gap-2 p-4 text-center ${
+                        selectedTarget === player.id ? 'mafia-player-card-selected' : ''
+                      }`}
+                    >
+                      <div className="mafia-player-avatar w-14 h-14 rounded-full overflow-hidden border border-[var(--color-dust)]/30 flex-shrink-0 flex items-center justify-center bg-[var(--color-cream)]">
+                        <img src={guestInfo.avatar} alt={guestInfo.name} className="w-full h-full object-cover" />
+                      </div>
+                      <span className="mafia-player-card-name text-xs font-semibold uppercase tracking-wider">{guestInfo.name}</span>
+                    </Card>
+                  </motion.div>
+                );
+              })}
             </div>
 
             <Button
@@ -179,3 +181,4 @@ export default function MafiaNightPhase({
     </div>
   );
 }
+
