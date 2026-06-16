@@ -830,7 +830,7 @@ function ScoreboardScreen({
 
 export default function CatCopyPage() {
   const navigate = useNavigate();
-  const { guestName } = useGuest();
+  const { guestName, setShowRegistration } = useGuest();
   const [gameState, setGameState] = useState<GameState>({ ...INITIAL_STATE });
   const [showScoreboard, setShowScoreboard] = useState(false);
 
@@ -960,20 +960,6 @@ export default function CatCopyPage() {
   const initializeGlobalGame = useCallback(async () => {
     if (!guestName) return;
 
-    // Check localStorage session
-    const storedSession = localStorage.getItem('cat_session');
-    let savedGameId = null;
-    let savedPlayerName = null;
-    if (storedSession) {
-      try {
-        const parsed = JSON.parse(storedSession);
-        savedGameId = parsed.gameId;
-        savedPlayerName = parsed.playerName;
-      } catch (e) {
-        console.error('Failed to parse cat_session', e);
-      }
-    }
-
     const { data: existingGame, error } = await supabase
       .from('cat_game')
       .select('*')
@@ -1011,43 +997,44 @@ export default function CatCopyPage() {
 
     setGameId(GLOBAL_GAME_ID);
 
-    if (savedGameId && savedPlayerName && activeGame) {
+    // Database-first check: see if current guestName is already in players list
+    const { data: existingPlayer } = await supabase
+      .from('cat_players')
+      .select('*')
+      .eq('game_id', GLOBAL_GAME_ID)
+      .eq('player_name', guestName)
+      .limit(1);
+
+    const playerExistsInDB = existingPlayer && existingPlayer.length > 0;
+
+    if (playerExistsInDB) {
+      console.log("Player already exists, reconnecting");
+      console.log("Found existing player");
+      console.log("Restoring session");
+      console.log("Rejoining room");
+
       setIsRejoining(true);
-      setRejoiningName(savedPlayerName);
+      setRejoiningName(guestName);
 
-      // Verify and restore player in database
-      const { data: existingPlayer } = await supabase
+      // Save/restore session locally in localStorage
+      localStorage.setItem(
+        'cat_session',
+        JSON.stringify({
+          gameId: GLOBAL_GAME_ID,
+          playerName: guestName
+        })
+      );
+
+      // Restore presence in DB
+      await supabase
         .from('cat_players')
-        .select('*')
+        .update({
+          is_connected: true,
+          last_seen: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
         .eq('game_id', GLOBAL_GAME_ID)
-        .eq('player_name', savedPlayerName)
-        .limit(1);
-
-      if (!existingPlayer || existingPlayer.length === 0) {
-        const { data: hosts } = await supabase
-          .from('cat_players')
-          .select('player_name')
-          .eq('game_id', GLOBAL_GAME_ID)
-          .eq('is_host', true);
-
-        const hasHost = hosts && hosts.length > 0;
-
-        await supabase.from('cat_players').insert([{
-          game_id: GLOBAL_GAME_ID,
-          player_name: savedPlayerName,
-          is_host: !hasHost,
-        }]);
-      } else {
-        await supabase
-          .from('cat_players')
-          .update({
-            is_connected: true,
-            last_seen: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('game_id', GLOBAL_GAME_ID)
-          .eq('player_name', savedPlayerName);
-      }
+        .eq('player_name', guestName);
 
       await fetchPlayersList();
 
@@ -1069,6 +1056,7 @@ export default function CatCopyPage() {
         setIsRejoining(false);
       }, 1500);
     } else {
+      // Player does not exist in DB
       localStorage.removeItem('cat_session');
 
       // Fetch players list first to determine initial states
@@ -1171,65 +1159,118 @@ export default function CatCopyPage() {
   }, [gameId, guestName, updateHeartbeat]);
 
   const handleJoinLobby = async () => {
-    if (!guestName || !gameId) return;
-
-    // Add player to cat_players list if they aren't already there
-    const { data: existingPlayer } = await supabase
-      .from('cat_players')
-      .select('*')
-      .eq('game_id', gameId)
-      .eq('player_name', guestName)
-      .limit(1);
-
-    if (!existingPlayer || existingPlayer.length === 0) {
-      // Find if any host exists
-      const { data: hosts } = await supabase
-        .from('cat_players')
-        .select('player_name')
-        .eq('game_id', gameId)
-        .eq('is_host', true);
-      
-      const hasHost = hosts && hosts.length > 0;
-
-      const { error: insertError } = await supabase.from('cat_players').insert([{
-        game_id: gameId,
-        player_name: guestName,
-        is_host: !hasHost,
-      }]);
-      if (insertError) {
-        console.error('Error joining cat players list:', insertError);
-      }
+    console.log("handleJoinLobby clicked! guestName:", guestName, "gameId:", gameId);
+    if (!guestName) {
+      console.log("guestName is missing, opening registration prompt...");
+      setShowRegistration(true);
+      return;
+    }
+    if (!gameId) {
+      console.error("gameId is missing");
+      return;
     }
 
-    // Save session locally
-    localStorage.setItem(
-      'cat_session',
-      JSON.stringify({
-        gameId: gameId,
-        playerName: guestName
-      })
-    );
+    try {
+      // Check if player already exists in the lobby/game
+      const { data: existingPlayer, error: selectError } = await supabase
+        .from('cat_players')
+        .select('*')
+        .eq('game_id', gameId)
+        .eq('player_name', guestName)
+        .limit(1);
 
-    // Instantly refetch players list locally so the current user sees themselves in the list
-    await fetchPlayersList();
+      if (selectError) {
+        console.error("Error checking existing player:", selectError);
+      }
 
-    // Check current state in DB and open waiting room if status is currently intro/scoreboard
-    const { data: currentGame } = await supabase
-      .from('cat_game')
-      .select('status')
-      .eq('id', gameId)
-      .single();
+      const playerExists = existingPlayer && existingPlayer.length > 0;
 
-    if (currentGame && (currentGame.status === 'intro' || currentGame.status === 'scoreboard')) {
-      await supabase
+      if (playerExists) {
+        console.log("Player already exists, reconnecting");
+        console.log("Found existing player");
+        console.log("Restoring session");
+        console.log("Rejoining room");
+
+        // Mark the player connected and update heartbeat
+        const { error: updateError } = await supabase
+          .from('cat_players')
+          .update({
+            is_connected: true,
+            last_seen: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('game_id', gameId)
+          .eq('player_name', guestName);
+
+        if (updateError) {
+          console.error("Error updating connection status:", updateError);
+        }
+      } else {
+        // Find if any host exists
+        const { data: hosts, error: hostError } = await supabase
+          .from('cat_players')
+          .select('player_name')
+          .eq('game_id', gameId)
+          .eq('is_host', true);
+        
+        if (hostError) {
+          console.error("Error checking host existence:", hostError);
+        }
+        
+        const hasHost = hosts && hosts.length > 0;
+
+        const { error: insertError } = await supabase.from('cat_players').insert([{
+          game_id: gameId,
+          player_name: guestName,
+          is_host: !hasHost,
+        }]);
+        if (insertError) {
+          console.error('Error joining cat players list:', insertError);
+        }
+      }
+
+      // Save/restore session locally
+      localStorage.setItem(
+        'cat_session',
+        JSON.stringify({
+          gameId: gameId,
+          playerName: guestName
+        })
+      );
+
+      // Instantly refetch players list locally so the current user sees themselves in the list
+      await fetchPlayersList();
+
+      // Check current state in DB and open waiting room if status is currently intro/scoreboard
+      const { data: currentGame, error: gameError } = await supabase
         .from('cat_game')
-        .update({ status: 'lobby' })
-        .eq('id', gameId);
-    } else {
-      setGameState((prev) => ({
-        ...prev,
-        phase: 'lobby',
-      }));
+        .select('status')
+        .eq('id', gameId)
+        .single();
+
+      if (gameError) {
+        console.error("Error checking current game state:", gameError);
+      }
+
+      if (currentGame) {
+        if (currentGame.status === 'intro' || currentGame.status === 'scoreboard') {
+          const { error: statusError } = await supabase
+            .from('cat_game')
+            .update({ status: 'lobby' })
+            .eq('id', gameId);
+          if (statusError) {
+            console.error("Error updating game status to lobby:", statusError);
+          }
+        } else {
+          // Restore their game state phase directly to the current game's status!
+          setGameState((prev) => ({
+            ...prev,
+            phase: currentGame.status as GamePhase,
+          }));
+        }
+      }
+    } catch (err) {
+      console.error("Unhandled exception in handleJoinLobby:", err);
     }
   };
 
