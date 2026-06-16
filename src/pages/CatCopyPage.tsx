@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { GUESTS, getGuestInfo } from '../lib/constants';
 import { useGuest } from '../hooks/useGuest';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import PageWrapper from '../components/layout/PageWrapper';
 import Button from '../components/shared/Button';
 import Card from '../components/shared/Card';
@@ -13,12 +14,14 @@ import catManifest from '../assets/cats/manifest.json';
 /* ─── Types ─── */
 type GamePhase =
   | 'intro'
+  | 'lobby'
   | 'roulette'
   | 'reveal'
   | 'challenge'
   | 'hold'
   | 'voting'
-  | 'result';
+  | 'result'
+  | 'scoreboard';
 
 type RoundType = 'normal' | 'double_trouble' | 'kashish_choice' | 'nightmare' | 'sudden_death';
 
@@ -506,30 +509,38 @@ function HoldScreen({
 }
 
 /* Voting Phase */
+interface VoteItem {
+  voter_name: string;
+  score: number;
+}
+
 function VotingScreen({
   playerName,
   catImage,
   voters,
-  onSubmitVotes,
+  votesList,
+  onSubmitVote,
+  guestName,
 }: {
   playerName: string;
   catImage: string;
   voters: { id: string; name: string; avatar: string }[];
-  onSubmitVotes: (votes: Record<string, number>) => void;
+  votesList: VoteItem[];
+  onSubmitVote: (score: number) => void;
+  guestName: string;
 }) {
-  const [scores, setScores] = useState<Record<string, number>>({});
+  const [selectedScore, setSelectedScore] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleScore = (voterId: string, score: number) => {
-    setScores((prev) => ({ ...prev, [voterId]: score }));
-  };
+  const isCurrentPlayer = playerName === guestName;
+  const hasVoted = votesList.some((v) => v.voter_name === guestName);
 
   const handleSubmit = () => {
-    setSubmitted(true);
-    onSubmitVotes(scores);
+    if (selectedScore !== null) {
+      onSubmitVote(selectedScore);
+      setSubmitted(true);
+    }
   };
-
-  const allVoted = voters.every((v) => scores[v.id] !== undefined);
 
   return (
     <div className="cat-voting-screen">
@@ -539,27 +550,24 @@ function VotingScreen({
         className="text-centered"
       >
         <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
-          How'd they do?
+          {isCurrentPlayer ? 'They are rating you!' : "How'd they do?"}
         </span>
-        <h2 className="text-3xl md:text-4xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)] mb-6">
-          Rate {playerName}'s copycat
+        <h2 className="text-3xl md:text-4xl font-light font-[family-name:var(--font-display)] text-[var(--color-ink)] mb-6 text-centered">
+          {isCurrentPlayer ? "Waiting for players to rate your copycat" : `Rate ${playerName}'s copycat`}
         </h2>
 
-        <div className="cat-voting-comparison">
-          <div className="cat-voting-original">
+        <div className="cat-voting-comparison" style={{ display: 'flex', gap: '24px', justifyContent: 'center', marginBottom: '32px', flexWrap: 'wrap' }}>
+          <div className="cat-voting-original" style={{ flex: '1', minWidth: '160px', maxWidth: '240px' }}>
             <p className="text-[10px] uppercase tracking-widest text-[var(--color-dust)] mb-2">
               Original
             </p>
-            <img src={catImage} alt="Original cat" className="cat-voting-img" />
+            <img src={catImage} alt="Original cat" className="cat-voting-img" style={{ width: '100%', height: 'auto', borderRadius: '8px' }} />
           </div>
-          <div className="cat-voting-vs">
-            <span className="text-2xl">⚡</span>
-          </div>
-          <div className="cat-voting-recreation">
+          <div className="cat-voting-recreation" style={{ flex: '1', minWidth: '160px', maxWidth: '240px' }}>
             <p className="text-[10px] uppercase tracking-widest text-[var(--color-dust)] mb-2">
               Recreation
             </p>
-            <div className="cat-voting-placeholder">
+            <div className="cat-voting-placeholder" style={{ padding: '24px', minHeight: '160px', boxSizing: 'border-box' }}>
               <span className="text-4xl">🎨</span>
               <p className="text-[10px] text-[var(--color-dust)] mt-2">
                 Look at {playerName}'s attempt!
@@ -568,56 +576,59 @@ function VotingScreen({
           </div>
         </div>
 
-        {!submitted ? (
-          <div className="cat-voting-scores">
-            <p className="text-xs text-[var(--color-dust)] mb-4">
-              Each voter rates 1–5 stars
-            </p>
-            <div className="cat-voting-voters">
-              {voters.map((voter) => (
-                <div key={voter.id} className="cat-voter-row">
-                  <div className="cat-voter-info">
-                    <img
-                      src={voter.avatar}
-                      alt={voter.name}
-                      className="cat-voter-avatar"
-                    />
-                    <span className="text-xs text-[var(--color-ink)]">
-                      {voter.name}
+        {isCurrentPlayer ? (
+          <div className="cat-voting-scores" style={{ maxWidth: '400px', margin: '0 auto' }}>
+            <p className="text-xs uppercase tracking-widest text-[var(--color-dust)] mb-4">Voter Status</p>
+            <div className="cat-voting-voters" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {voters.map((voter) => {
+                const voted = votesList.some((v) => v.voter_name === voter.name);
+                return (
+                  <div key={voter.id} className="cat-voter-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--color-cream)', border: '1px solid var(--color-dust)', borderRadius: '4px' }}>
+                    <div className="cat-voter-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <img src={voter.avatar} alt={voter.name} className="cat-voter-avatar" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
+                      <span className="text-xs text-[var(--color-ink)]">{voter.name}</span>
+                    </div>
+                    <span className="text-xs font-semibold" style={{ color: voted ? 'var(--color-red)' : 'var(--color-dust)' }}>
+                      {voted ? 'Voted ✓' : 'Voting...'}
                     </span>
                   </div>
-                  <div className="cat-star-rating">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        onClick={() => handleScore(voter.id, star)}
-                        className={`cat-star ${
-                          scores[voter.id] !== undefined && scores[voter.id] >= star
-                            ? 'cat-star-active'
-                            : ''
-                        }`}
-                      >
-                        ★
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : submitted || hasVoted ? (
+          <div style={{ marginTop: '24px' }}>
+            <p className="text-sm text-[var(--color-dust)]">
+              Your rating of {selectedScore || votesList.find((v) => v.voter_name === guestName)?.score} stars has been recorded! ✓
+            </p>
+          </div>
+        ) : (
+          <div className="cat-voting-scores" style={{ maxWidth: '400px', margin: '0 auto' }}>
+            <p className="text-xs text-[var(--color-dust)] mb-6">Rate 1–5 stars based on their copycat drawing or pose</p>
+            <div className="cat-star-rating" style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '24px' }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => setSelectedScore(star)}
+                  style={{
+                    fontSize: '32px',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: (selectedScore !== null && selectedScore >= star) ? 'var(--color-crimson)' : 'var(--color-dust)',
+                    transition: 'color 0.15s ease'
+                  }}
+                >
+                  ★
+                </button>
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px' }}>
-              <Button variant="primary" onClick={handleSubmit} disabled={!allVoted}>
-                Submit Votes
+              <Button variant="primary" onClick={handleSubmit} disabled={selectedScore === null}>
+                Submit Rating
               </Button>
             </div>
           </div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="mt-6"
-          >
-            <p className="text-sm text-[var(--color-dust)]">Votes recorded! ✓</p>
-          </motion.div>
         )}
       </motion.div>
     </div>
@@ -695,32 +706,44 @@ function ResultScreen({
 }
 
 /* Final Scoreboard */
+interface AllVotesItem {
+  round: number;
+  voter_name: string;
+  target_name: string;
+  score: number;
+}
+
 function ScoreboardScreen({
-  results,
+  votes,
   onPlayAgain,
+  isHost,
 }: {
-  results: RoundResult[];
+  votes: AllVotesItem[];
   onPlayAgain: () => void;
+  isHost: boolean;
 }) {
   const navigate = useNavigate();
 
   // Aggregate scores per player
   const playerScores = useMemo(() => {
-    const scores: Record<string, { total: number; rounds: number }> = {};
-    results.forEach((r) => {
-      if (!scores[r.playerName]) scores[r.playerName] = { total: 0, rounds: 0 };
-      scores[r.playerName].total += r.averageScore;
-      scores[r.playerName].rounds += 1;
+    const ratings: Record<string, { sum: number; count: number }> = {};
+    votes.forEach((v) => {
+      const name = v.target_name;
+      if (!ratings[name]) {
+        ratings[name] = { sum: 0, count: 0 };
+      }
+      ratings[name].sum += v.score;
+      ratings[name].count += 1;
     });
-    return Object.entries(scores)
+
+    return Object.entries(ratings)
       .map(([name, data]) => ({
         name,
-        avg: data.total / data.rounds,
-        total: data.total,
-        rounds: data.rounds,
+        avg: data.count > 0 ? data.sum / data.count : 0,
+        rounds: data.count,
       }))
       .sort((a, b) => b.avg - a.avg);
-  }, [results]);
+  }, [votes]);
 
   return (
     <div className="cat-scoreboard">
@@ -735,30 +758,36 @@ function ScoreboardScreen({
         </h2>
 
         <div className="cat-scoreboard-list">
-          {playerScores.map((player, idx) => (
-            <motion.div
-              key={player.name}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: idx * 0.15 }}
-              className={`cat-scoreboard-row ${idx === 0 ? 'cat-scoreboard-winner' : ''}`}
-            >
-              <div className="cat-scoreboard-rank">
-                {idx === 0 ? '👑' : `#${idx + 1}`}
-              </div>
-              <div className="cat-scoreboard-name">{player.name}</div>
-              <div className="cat-scoreboard-score">
-                {player.avg.toFixed(1)}
-                <span className="text-[var(--color-dust)]"> avg</span>
-              </div>
-            </motion.div>
-          ))}
+          {playerScores.length > 0 ? (
+            playerScores.map((player, idx) => (
+              <motion.div
+                key={player.name}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.15 }}
+                className={`cat-scoreboard-row ${idx === 0 ? 'cat-scoreboard-winner' : ''}`}
+              >
+                <div className="cat-scoreboard-rank">
+                  {idx === 0 ? '👑' : `#${idx + 1}`}
+                </div>
+                <div className="cat-scoreboard-name">{player.name}</div>
+                <div className="cat-scoreboard-score">
+                  {player.avg.toFixed(1)}
+                  <span className="text-[var(--color-dust)]"> avg</span>
+                </div>
+              </motion.div>
+            ))
+          ) : (
+            <p className="text-sm text-[var(--color-dust)]">No scores recorded yet!</p>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '40px' }}>
-          <Button variant="primary" onClick={onPlayAgain}>
-            Play Again
-          </Button>
+          {isHost && (
+            <Button variant="primary" onClick={onPlayAgain}>
+              Play Again
+            </Button>
+          )}
           <Button variant="ghost" onClick={() => navigate('/games')}>
             ← Back to Games
           </Button>
@@ -778,14 +807,25 @@ export default function CatCopyPage() {
   const [gameState, setGameState] = useState<GameState>({ ...INITIAL_STATE });
   const [showScoreboard, setShowScoreboard] = useState(false);
 
-  // Get eligible players (all guests including Kashish by default)
-  const allPlayers = useMemo(() => {
-    return GUESTS.map((g) => getGuestInfo(g.id));
-  }, []);
+  // Multiplayer realtime states
+  const [gameId, setGameId] = useState<string | null>(null);
+  const [isHost, setIsHost] = useState(false);
+  const [joinedPlayers, setJoinedPlayers] = useState<{ player_name: string; is_host: boolean }[]>([]);
+  const [votesList, setVotesList] = useState<VoteItem[]>([]);
+  const [allVotesForGame, setAllVotesForGame] = useState<AllVotesItem[]>([]);
+  const [isSearching, setIsSearching] = useState(true);
+
+  // Get eligible players from the joined player list
+  const activePlayers = useMemo(() => {
+    if (joinedPlayers.length === 0) {
+      return GUESTS.map((g) => getGuestInfo(g.id));
+    }
+    return joinedPlayers.map((p) => getGuestInfo(p.player_name));
+  }, [joinedPlayers]);
 
   const getAvailablePlayers = useCallback(
     (roundType: RoundType, eliminatedIds: string[], usedPlayers: string[]) => {
-      let pool = allPlayers.filter((p) => !eliminatedIds.includes(p.id));
+      let pool = activePlayers.filter((p) => !eliminatedIds.includes(p.id));
       // For Kashish's Choice, exclude Kashish from being selected
       if (roundType === 'kashish_choice') {
         pool = pool.filter((p) => p.id !== 'kashish');
@@ -794,121 +834,376 @@ export default function CatCopyPage() {
       const unused = pool.filter((p) => !usedPlayers.includes(p.name));
       return unused.length > 0 ? unused : pool;
     },
-    [allPlayers]
+    [activePlayers]
   );
 
-  // Start a new game
-  const handleStart = useCallback(() => {
+  // Discover and automatically join an active room created within the last 2 hours
+  const discoverAndJoinGame = useCallback(async () => {
+    if (!guestName) return;
+
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+
+    const { data: activeGames, error } = await supabase
+      .from('cat_game')
+      .select('*')
+      .gt('created_at', twoHoursAgo)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error('Error discovering cat game room:', error);
+      return;
+    }
+
+    if (activeGames && activeGames.length > 0) {
+      const activeGame = activeGames[0];
+      setGameId(activeGame.id);
+
+      setGameState({
+        phase: activeGame.status as GamePhase,
+        round: activeGame.round,
+        currentPlayer: activeGame.current_player,
+        currentCat: activeGame.current_cat,
+        roundType: (activeGame.round_type || 'normal') as RoundType,
+        usedCats: activeGame.used_cats || [],
+        usedPlayers: activeGame.used_players || [],
+        results: [],
+        eliminatedIds: [],
+        chaosActive: activeGame.status === 'reveal',
+        challengeTime: activeGame.round_type === 'nightmare' ? 5 : 10,
+      });
+
+      await joinGameRoom(activeGame.id);
+    }
+  }, [guestName]);
+
+  // Join a room helper
+  const joinGameRoom = async (gid: string) => {
+    if (!guestName) return;
+
+    const { data: existingPlayer } = await supabase
+      .from('cat_players')
+      .select('*')
+      .eq('game_id', gid)
+      .eq('player_name', guestName)
+      .limit(1);
+
+    if (existingPlayer && existingPlayer.length > 0) {
+      setIsHost(existingPlayer[0].is_host);
+      return;
+    }
+
+    const { error } = await supabase.from('cat_players').insert([{
+      game_id: gid,
+      player_name: guestName,
+      is_host: false,
+    }]);
+
+    if (error) {
+      console.error('Error joining cat players list:', error);
+    }
+  };
+
+  // Create game room (acting as host)
+  const createGameRoom = async () => {
+    if (!guestName) return;
+
+    const { data: newGame, error } = await supabase
+      .from('cat_game')
+      .insert([{
+        status: 'lobby',
+        round: 0,
+        round_type: 'normal',
+      }])
+      .select()
+      .single();
+
+    if (error || !newGame) {
+      console.error('Error creating cat game room:', error);
+      return;
+    }
+
+    setGameId(newGame.id);
+    setIsHost(true);
+    setGameState({
+      phase: 'lobby',
+      round: 0,
+      currentPlayer: null,
+      currentCat: null,
+      roundType: 'normal',
+      usedCats: [],
+      usedPlayers: [],
+      results: [],
+      eliminatedIds: [],
+      chaosActive: false,
+      challengeTime: 10,
+    });
+
+    await supabase.from('cat_players').insert([{
+      game_id: newGame.id,
+      player_name: guestName,
+      is_host: true,
+    }]);
+  };
+
+  // Run discovery on load
+  useEffect(() => {
+    const searchTimer = setTimeout(() => {
+      setIsSearching(false);
+    }, 1500);
+
+    discoverAndJoinGame().finally(() => {
+      setIsSearching(false);
+      clearTimeout(searchTimer);
+    });
+  }, [discoverAndJoinGame]);
+
+  // Realtime subscription setup
+  useEffect(() => {
+    if (!gameId) return;
+
+    const fetchPlayersList = async () => {
+      const { data } = await supabase
+        .from('cat_players')
+        .select('player_name, is_host')
+        .eq('game_id', gameId);
+      if (data) {
+        setJoinedPlayers(data as { player_name: string; is_host: boolean }[]);
+        const me = (data as { player_name: string; is_host: boolean }[]).find((p) => p.player_name === guestName);
+        if (me) {
+          setIsHost(me.is_host);
+        }
+      }
+    };
+    fetchPlayersList();
+
+    const fetchVotesList = async (currentRound: number) => {
+      const { data } = await supabase
+        .from('cat_votes')
+        .select('voter_name, score')
+        .eq('game_id', gameId)
+        .eq('round', currentRound);
+      if (data) {
+        setVotesList(data);
+      }
+    };
+    if (gameState.round > 0) {
+      fetchVotesList(gameState.round);
+    }
+
+    const gameChannel = supabase
+      .channel(`cat_game:${gameId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'cat_game', filter: `id=eq.${gameId}` },
+        (payload: any) => {
+          const newGame = payload.new;
+          setGameState((prev) => ({
+            ...prev,
+            phase: newGame.status as GamePhase,
+            round: newGame.round,
+            currentPlayer: newGame.current_player,
+            currentCat: newGame.current_cat,
+            roundType: (newGame.round_type || 'normal') as RoundType,
+            usedCats: newGame.used_cats || [],
+            usedPlayers: newGame.used_players || [],
+            chaosActive: newGame.status === 'reveal',
+            challengeTime: newGame.round_type === 'nightmare' ? 5 : 10,
+          }));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cat_players', filter: `game_id=eq.${gameId}` },
+        () => {
+          fetchPlayersList();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cat_votes', filter: `game_id=eq.${gameId}` },
+        () => {
+          if (gameState.round > 0) {
+            fetchVotesList(gameState.round);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(gameChannel);
+    };
+  }, [gameId, gameState.round, guestName]);
+
+  // Fetch final votes list for scoreboard display
+  const fetchAllVotesForGame = useCallback(async () => {
+    if (!gameId) return;
+    const { data } = await supabase
+      .from('cat_votes')
+      .select('round, voter_name, target_name, score')
+      .eq('game_id', gameId);
+    if (data) {
+      setAllVotesForGame(data);
+    }
+  }, [gameId]);
+
+  useEffect(() => {
+    if (showScoreboard || gameState.phase === 'scoreboard') {
+      fetchAllVotesForGame();
+    }
+  }, [showScoreboard, gameState.phase, fetchAllVotesForGame]);
+
+  // Start game triggers roulette
+  const handleStart = useCallback(async () => {
+    if (!gameId || !isHost) return;
+
     const round = 1;
     const roundType = getRoundType(round);
-    setGameState({
-      ...INITIAL_STATE,
-      phase: 'roulette',
-      round,
-      roundType,
-      challengeTime: roundType === 'nightmare' ? 5 : 10,
-    });
-    setShowScoreboard(false);
-  }, []);
+
+    await supabase
+      .from('cat_game')
+      .update({
+        status: 'roulette',
+        round,
+        round_type: roundType,
+        current_player: null,
+        current_cat: null,
+        used_cats: [],
+        used_players: [],
+      })
+      .eq('id', gameId);
+  }, [gameId, isHost]);
 
   // Player selected from roulette
   const handlePlayerSelected = useCallback(
-    (playerName: string) => {
+    async (playerName: string) => {
+      if (!gameId) return;
+
       const catNum = getRandomCat(gameState.usedCats);
-      setGameState((prev) => ({
-        ...prev,
-        phase: 'reveal',
-        currentPlayer: playerName,
-        currentCat: getCatImagePath(catNum),
-        usedCats: [...prev.usedCats, catNum],
-        usedPlayers: [...prev.usedPlayers, playerName],
-        chaosActive: true,
-      }));
+      const catPath = getCatImagePath(catNum);
+
+      await supabase
+        .from('cat_game')
+        .update({
+          status: 'reveal',
+          current_player: playerName,
+          current_cat: catPath,
+          used_cats: [...gameState.usedCats, catNum],
+          used_players: [...gameState.usedPlayers, playerName],
+        })
+        .eq('id', gameId);
     },
-    [gameState.usedCats]
+    [gameId, gameState.usedCats, gameState.usedPlayers]
   );
 
-  // Cat memorization done
-  const handleRevealDone = useCallback(() => {
-    setGameState((prev) => ({
-      ...prev,
-      phase: 'hold',
-      chaosActive: false,
-    }));
-  }, []);
+  // Cat memorization countdown finishes
+  const handleRevealDone = useCallback(async () => {
+    if (!gameId) return;
+    if (gameState.currentPlayer === guestName || isHost) {
+      await supabase
+        .from('cat_game')
+        .update({ status: 'hold' })
+        .eq('id', gameId);
+    }
+  }, [gameId, gameState.currentPlayer, guestName, isHost]);
 
-  // Drawing phase done
-  const handleHoldDone = useCallback(() => {
-    setGameState((prev) => ({
-      ...prev,
-      phase: 'voting',
-    }));
-  }, []);
+  // Drawing phase finishes
+  const handleHoldDone = useCallback(async () => {
+    if (!gameId) return;
+    if (gameState.currentPlayer === guestName || isHost) {
+      await supabase
+        .from('cat_game')
+        .update({ status: 'voting' })
+        .eq('id', gameId);
+    }
+  }, [gameId, gameState.currentPlayer, guestName, isHost]);
 
-  // Votes submitted
+  // Single rating submitted
   const handleVotesSubmitted = useCallback(
-    (votes: Record<string, number>) => {
-      const voteValues = Object.values(votes);
-      const avg = voteValues.length > 0
-        ? voteValues.reduce((a, b) => a + b, 0) / voteValues.length
-        : 0;
+    async (score: number) => {
+      if (!gameId || !guestName || !gameState.currentPlayer) return;
 
-      // Map voter IDs to names for display
-      const namedVotes: Record<string, number> = {};
-      Object.entries(votes).forEach(([voterId, score]) => {
-        const info = getGuestInfo(voterId);
-        namedVotes[info.name] = score;
-      });
+      const { error } = await supabase
+        .from('cat_votes')
+        .insert([{
+          game_id: gameId,
+          round: gameState.round,
+          voter_name: guestName,
+          target_name: gameState.currentPlayer,
+          score: score,
+        }]);
 
-      const result: RoundResult = {
-        playerName: gameState.currentPlayer!,
-        catImage: gameState.currentCat!,
-        roundType: gameState.roundType,
-        votes: namedVotes,
-        averageScore: avg,
-      };
-
-      setGameState((prev) => ({
-        ...prev,
-        phase: 'result',
-        results: [...prev.results, result],
-      }));
+      if (error) {
+        console.error('Error submitting vote rating:', error);
+      }
     },
-    [gameState.currentPlayer, gameState.currentCat, gameState.roundType]
+    [gameId, gameState.round, guestName, gameState.currentPlayer]
   );
 
-  // Next round
-  const handleNextRound = useCallback(() => {
+  // Host reveals round results
+  const handleRevealResults = useCallback(async () => {
+    if (!gameId || !isHost) return;
+
+    await supabase
+      .from('cat_game')
+      .update({ status: 'result' })
+      .eq('id', gameId);
+  }, [gameId, isHost]);
+
+  // Host transitions to next round
+  const handleNextRound = useCallback(async () => {
+    if (!gameId || !isHost) return;
+
     const nextRound = gameState.round + 1;
     const roundType = getRoundType(nextRound);
 
-    setGameState((prev) => ({
-      ...prev,
-      phase: 'roulette',
-      round: nextRound,
-      roundType,
-      currentPlayer: null,
-      currentCat: null,
-      chaosActive: false,
-      challengeTime: roundType === 'nightmare' ? 5 : 10,
-    }));
-  }, [gameState.round]);
+    await supabase
+      .from('cat_game')
+      .update({
+        status: 'roulette',
+        round: nextRound,
+        round_type: roundType,
+        current_player: null,
+        current_cat: null,
+      })
+      .eq('id', gameId);
+  }, [gameId, isHost, gameState.round]);
 
-  // End game
-  const handleEndGame = useCallback(() => {
-    setShowScoreboard(true);
-  }, []);
+  // Host ends game
+  const handleEndGame = useCallback(async () => {
+    if (!gameId || !isHost) return;
 
-  // Play again
-  const handlePlayAgain = useCallback(() => {
-    setGameState({ ...INITIAL_STATE });
+    await supabase
+      .from('cat_game')
+      .update({ status: 'scoreboard' })
+      .eq('id', gameId);
+  }, [gameId, isHost]);
+
+  // Reset game session completely
+  const handlePlayAgain = useCallback(async () => {
+    if (!gameId || !isHost) return;
+
+    await supabase.from('cat_votes').delete().eq('game_id', gameId);
+
+    await supabase
+      .from('cat_game')
+      .update({
+        status: 'lobby',
+        round: 0,
+        current_player: null,
+        current_cat: null,
+        used_cats: [],
+        used_players: [],
+      })
+      .eq('id', gameId);
+
     setShowScoreboard(false);
-  }, []);
+  }, [gameId, isHost]);
 
   // Get voters (all players except current player)
   const currentVoters = useMemo(() => {
-    return allPlayers.filter((p) => p.name !== gameState.currentPlayer);
-  }, [allPlayers, gameState.currentPlayer]);
+    return activePlayers.filter((p) => p.name !== gameState.currentPlayer);
+  }, [activePlayers, gameState.currentPlayer]);
 
   // Available players for roulette
   const roulettePlayers = useMemo(() => {
@@ -919,15 +1214,147 @@ export default function CatCopyPage() {
     );
   }, [getAvailablePlayers, gameState.roundType, gameState.eliminatedIds, gameState.usedPlayers]);
 
+  // Compute round result dynamically from the current round's votes list
+  const currentRoundResult = useMemo((): RoundResult | null => {
+    if (votesList.length === 0 && gameState.currentPlayer === null) return null;
+
+    const total = votesList.reduce((acc, curr) => acc + curr.score, 0);
+    const avg = votesList.length > 0 ? total / votesList.length : 0;
+
+    const mappedVotes: Record<string, number> = {};
+    votesList.forEach((v) => {
+      mappedVotes[v.voter_name] = v.score;
+    });
+
+    return {
+      playerName: gameState.currentPlayer || 'Active Player',
+      catImage: gameState.currentCat || '',
+      roundType: gameState.roundType,
+      votes: mappedVotes,
+      averageScore: avg,
+    };
+  }, [votesList, gameState.currentPlayer, gameState.currentCat, gameState.roundType]);
+
   /* ─── Render ─── */
 
-  if (showScoreboard) {
+  if (!gameId) {
     return (
       <PageWrapper className="bg-[var(--color-parchment)]">
-        <div className="page-container">
+        <div className="page-container cat-copy-page">
+          <button
+            onClick={() => navigate('/games')}
+            className="game-back-link"
+          >
+            ← Back to Games
+          </button>
+
+          <div className="cat-intro">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="text-centered"
+            >
+              <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-3">
+                Real-Time Party Game
+              </span>
+              <h1 className="text-4xl md:text-6xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)] mb-4">
+                🐱 cat copy challenge
+              </h1>
+              <p className="text-centered" style={{ fontSize: '14px', color: 'var(--color-dust)', maxWidth: '448px', margin: '0 auto 48px', lineHeight: '1.7' }}>
+                A cat image will flash on screen. Recreate it by drawing or posing, and get voted on by everyone else in real time!
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', marginTop: '24px' }}>
+                {isSearching ? (
+                  <p className="text-xs text-[var(--color-dust)] uppercase tracking-wider">Searching for active game rooms...</p>
+                ) : (
+                  <>
+                    <Button variant="primary" onClick={createGameRoom}>
+                      Create Game Room
+                    </Button>
+                    <p className="text-[10px] uppercase tracking-wider text-[var(--color-dust)]">Or open the link on another phone to join automatically</p>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  if (gameState.phase === 'lobby') {
+    return (
+      <PageWrapper className="bg-[var(--color-parchment)]">
+        <div className="page-container cat-copy-page">
+          <button
+            onClick={async () => {
+              if (gameId) {
+                await supabase
+                  .from('cat_players')
+                  .delete()
+                  .eq('game_id', gameId)
+                  .eq('player_name', guestName || '');
+              }
+              setGameId(null);
+            }}
+            className="game-back-link"
+          >
+            ← Leave Lobby
+          </button>
+
+          <div className="text-centered">
+            <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
+              Waiting Room
+            </span>
+            <h1 className="text-3xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)] mb-8">
+              Cat Copy Lobby
+            </h1>
+
+            <div style={{ maxWidth: '400px', margin: '0 auto 32px' }}>
+              <p className="text-xs uppercase tracking-widest text-[var(--color-dust)] mb-4">
+                Joined Players ({joinedPlayers.length})
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {joinedPlayers.map((player) => {
+                  const info = getGuestInfo(player.player_name);
+                  return (
+                    <Card key={player.player_name} className="flex flex-col items-center p-3 text-centered bg-[var(--color-cream)]">
+                      <img src={info.avatar} alt={info.name} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', marginBottom: '8px' }} />
+                      <span className="text-xs uppercase tracking-wider font-semibold text-[var(--color-ink)]">{info.name}</span>
+                      {player.is_host && <span className="text-[9px] uppercase tracking-widest text-[var(--color-crimson)] mt-1">Host</span>}
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
+              {isHost ? (
+                <Button variant="primary" onClick={handleStart} disabled={joinedPlayers.length < 2}>
+                  Start Game ({joinedPlayers.length} players) →
+                </Button>
+              ) : (
+                <p className="text-xs uppercase tracking-[0.15em] text-[var(--color-dust)] pulsing">
+                  Waiting for host to start the game...
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  if (showScoreboard || gameState.phase === 'scoreboard') {
+    return (
+      <PageWrapper className="bg-[var(--color-parchment)]">
+        <div className="page-container cat-copy-page">
           <ScoreboardScreen
-            results={gameState.results}
+            votes={allVotesForGame}
             onPlayAgain={handlePlayAgain}
+            isHost={isHost}
           />
         </div>
       </PageWrapper>
@@ -949,27 +1376,17 @@ export default function CatCopyPage() {
   return (
     <PageWrapper className="bg-[var(--color-parchment)]">
       <div className="page-container cat-copy-page">
-        {/* Back button (not on intro) */}
-        {gameState.phase !== 'intro' && (
+        {/* Back button */}
+        {true && (
           <button
-            onClick={() =>
-              gameState.phase === 'roulette' && gameState.round === 1
-                ? setGameState({ ...INITIAL_STATE })
-                : navigate('/games')
-            }
-            className="text-xs uppercase tracking-[0.2em] mb-6 cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)] transition-colors"
+            onClick={() => navigate('/games')}
+            className="game-back-link"
           >
-            ← Back
+            ← Back to Games
           </button>
         )}
 
         <AnimatePresence mode="wait">
-          {gameState.phase === 'intro' && (
-            <motion.div key="intro" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <IntroScreen onStart={handleStart} />
-            </motion.div>
-          )}
-
           {gameState.phase === 'roulette' && (
             <motion.div key="roulette" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <RouletteScreen
@@ -997,15 +1414,28 @@ export default function CatCopyPage() {
                 playerName={gameState.currentPlayer!}
                 catImage={gameState.currentCat!}
                 voters={currentVoters}
-                onSubmitVotes={handleVotesSubmitted}
+                votesList={votesList}
+                onSubmitVote={handleVotesSubmitted}
+                guestName={guestName || ''}
               />
+              {isHost && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
+                  <Button
+                    variant="primary"
+                    onClick={handleRevealResults}
+                    disabled={votesList.length < currentVoters.length}
+                  >
+                    Reveal Results ({votesList.length}/{currentVoters.length} votes) →
+                  </Button>
+                </div>
+              )}
             </motion.div>
           )}
 
-          {gameState.phase === 'result' && gameState.results.length > 0 && (
+          {gameState.phase === 'result' && currentRoundResult && (
             <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ResultScreen
-                result={gameState.results[gameState.results.length - 1]}
+                result={currentRoundResult}
                 catImage={gameState.currentCat!}
                 onNextRound={handleNextRound}
                 onEndGame={handleEndGame}

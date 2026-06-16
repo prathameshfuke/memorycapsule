@@ -31,7 +31,7 @@ function DumbCharades({ onBack }: { onBack: () => void }) {
     <div className="game-view-container">
       <button
         onClick={onBack}
-        className="text-xs uppercase tracking-[0.2em] mb-10 cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)] transition-colors"
+        className="game-back-link"
       >
         ← Back to Games
       </button>
@@ -113,7 +113,7 @@ function NeverHaveIEverGame({ onBack }: { onBack: () => void }) {
     <div className="game-view-container">
       <button
         onClick={onBack}
-        className="text-xs uppercase tracking-[0.2em] mb-10 cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)] transition-colors"
+        className="game-back-link"
       >
         ← Back to Games
       </button>
@@ -198,7 +198,7 @@ function MeetSomeoneGame({ onBack }: { onBack: () => void }) {
     <div className="game-view-container">
       <button
         onClick={onBack}
-        className="text-xs uppercase tracking-[0.2em] mb-10 cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)] transition-colors"
+        className="game-back-link"
       >
         ← Back to Games
       </button>
@@ -428,7 +428,7 @@ function InteractiveVotingGame({
     <div className="game-view-container">
       <button
         onClick={onBack}
-        className="text-xs uppercase tracking-[0.2em] mb-10 cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)] transition-colors"
+        className="game-back-link"
       >
         ← Back to Games
       </button>

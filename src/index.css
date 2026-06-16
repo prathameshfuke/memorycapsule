@@ -113,6 +113,12 @@ body, p, span, input, textarea, select, option, label {
   font-weight: 400 !important;
 }
 
+/* Let button children keep their intended weight */
+button span, button p, .app-button span, .app-button p,
+button *, .app-button * {
+  font-weight: inherit !important;
+}
+
 #root {
   min-height: 100dvh;
   width: 100%;
@@ -144,24 +150,50 @@ body, p, span, input, textarea, select, option, label {
   text-align: center;
 }
 
+/* Back-link style for game pages */
+.game-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--color-dust);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 0;
+  margin-bottom: 24px;
+  transition: color 0.2s ease, transform 0.15s ease;
+  font-family: var(--font-body);
+}
+
+.game-back-link:hover {
+  color: var(--color-ink);
+  transform: translateX(-2px);
+}
+
 /* ─── Premium Buttons ─── */
 .app-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 44px;
-  padding: 12px 28px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600 !important;
+  min-height: 48px;
+  padding: 14px 32px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700 !important;
   text-transform: uppercase;
-  letter-spacing: 0.18em;
-  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  letter-spacing: 0.14em;
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
   cursor: pointer;
   border: 1px solid transparent;
   box-sizing: border-box;
   font-family: var(--font-body);
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .app-button:disabled {
@@ -2961,6 +2993,55 @@ h2, h3, h4, h5, h6 {
   font-size: 20px;
   font-weight: 300;
   color: var(--color-ink);
+}
+
+/* ─── Cat Copy Intro & Roulette ─── */
+.cat-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  padding: 20px 0;
+}
+
+.cat-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+@media (max-width: 480px) {
+  .cat-rules-grid {
+    grid-template-columns: 1fr;
+    max-width: 280px;
+  }
+}
+
+/* Avatar ring in roulette */
+.cat-avatar-ring {
+  border: 3px solid var(--color-dust);
+  transition: all 0.3s ease;
+}
+
+.cat-avatar-spinning {
+  border-color: var(--color-dust);
+  animation: cat-ring-spin 1.2s linear infinite;
+}
+
+.cat-avatar-selected {
+  border-color: var(--color-crimson);
+  box-shadow: 0 0 0 4px rgba(195, 35, 43, 0.15), 0 8px 24px rgba(195, 35, 43, 0.1);
+}
+
+@keyframes cat-ring-spin {
+  0% { border-color: var(--color-dust); }
+  50% { border-color: var(--color-crimson); }
+  100% { border-color: var(--color-dust); }
 }
 
 /* ─── Reduced motion ─── */

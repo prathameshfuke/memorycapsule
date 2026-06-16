@@ -84,7 +84,7 @@ export default function MafiaPage() {
           <div className="mafia-page-container" style={{ paddingBottom: 0, paddingTop: '24px' }}>
             <button
               onClick={() => navigate('/games')}
-              className="text-xs uppercase tracking-[0.2em] mb-4 cursor-pointer text-[var(--color-dust)] hover:text-[var(--color-ink)] transition-colors"
+              className="game-back-link"
             >
               ← Back to Games
             </button>
