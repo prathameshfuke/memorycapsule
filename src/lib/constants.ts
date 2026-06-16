@@ -218,11 +218,11 @@ export const GUESTS: Guest[] = [
   { id: 'vivek', name: 'Vivek', avatar: '/avatars/vivek.jpeg' },
   { id: 'rugved', name: 'Rugved', avatar: '/avatars/rugved.png' },
   { id: 'harsh', name: 'Harsh', avatar: '/avatars/harsh.png' },
-  { id: 'nikhil', name: 'Nikhil' },
+  { id: 'nikhil', name: 'Nikhil', avatar: '/avatars/nikhil.png' },
   { id: 'nidhi', name: 'Nidhi', avatar: '/avatars/nidhi.png' },
   { id: 'shreya', name: 'Shreya', avatar: '/avatars/shreya.png' },
-  { id: 'kevali', name: 'Kevali' },
-  { id: 'satyarth', name: 'Satyarth' },
+  { id: 'kevali', name: 'Kevali', avatar: '/avatars/kevali.png' },
+  { id: 'satyarth', name: 'Satyarth', avatar: '/avatars/satyarth.png' },
 ];
 
 export function getGuestInfo(nameOrId: string | null): { id: string; name: string; avatar: string } {

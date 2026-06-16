@@ -120,8 +120,9 @@ function IntroScreen({ onStart }: { onStart: () => void }) {
         <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-3">
           The funniest game
         </span>
+        <div style={{ fontSize: '48px', lineHeight: 1, marginBottom: '12px' }}>🐱</div>
         <h1 className="text-4xl md:text-6xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)] mb-4">
-          🐱 cat copy challenge
+          cat copy challenge
         </h1>
         <p className="text-centered" style={{ fontSize: '14px', color: 'var(--color-dust)', maxWidth: '448px', margin: '0 auto 48px', lineHeight: '1.7' }}>
           A cat image will flash on screen. You have seconds to memorize it.
@@ -807,13 +808,16 @@ export default function CatCopyPage() {
   const [gameState, setGameState] = useState<GameState>({ ...INITIAL_STATE });
   const [showScoreboard, setShowScoreboard] = useState(false);
 
+  const GLOBAL_GAME_ID = '00000000-0000-0000-0000-000000000000';
+
   // Multiplayer realtime states
-  const [gameId, setGameId] = useState<string | null>(null);
-  const [isHost, setIsHost] = useState(false);
+  const [gameId, setGameId] = useState<string | null>(GLOBAL_GAME_ID);
+  const [isHost, setIsHost] = useState(true); // Everyone has host control
   const [joinedPlayers, setJoinedPlayers] = useState<{ player_name: string; is_host: boolean }[]>([]);
   const [votesList, setVotesList] = useState<VoteItem[]>([]);
   const [allVotesForGame, setAllVotesForGame] = useState<AllVotesItem[]>([]);
   const [isSearching, setIsSearching] = useState(true);
+
 
   // Get eligible players from the joined player list
   const activePlayers = useMemo(() => {
@@ -837,28 +841,79 @@ export default function CatCopyPage() {
     [activePlayers]
   );
 
-  // Discover and automatically join an active room created within the last 2 hours
-  const discoverAndJoinGame = useCallback(async () => {
+  // Helper functions to fetch lists (extracted to useCallback)
+  const fetchPlayersList = useCallback(async () => {
+    if (!GLOBAL_GAME_ID) return;
+    const { data, error } = await supabase
+      .from('cat_players')
+      .select('player_name, is_host')
+      .eq('game_id', GLOBAL_GAME_ID);
+    if (error) {
+      console.error('Error fetching players list:', error);
+    }
+    if (data) {
+      setJoinedPlayers(data as { player_name: string; is_host: boolean }[]);
+    }
+  }, []);
+
+  const fetchVotesList = useCallback(async (currentRound: number) => {
+    if (!GLOBAL_GAME_ID) return;
+    const { data, error } = await supabase
+      .from('cat_votes')
+      .select('voter_name, score')
+      .eq('game_id', GLOBAL_GAME_ID)
+      .eq('round', currentRound);
+    if (error) {
+      console.error('Error fetching votes list:', error);
+    }
+    if (data) {
+      setVotesList(data);
+    }
+  }, []);
+
+  const initializeGlobalGame = useCallback(async () => {
     if (!guestName) return;
 
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-
-    const { data: activeGames, error } = await supabase
+    const { data: existingGame, error } = await supabase
       .from('cat_game')
       .select('*')
-      .gt('created_at', twoHoursAgo)
-      .order('created_at', { ascending: false })
+      .eq('id', GLOBAL_GAME_ID)
       .limit(1);
 
     if (error) {
-      console.error('Error discovering cat game room:', error);
+      console.error('Error fetching global cat game:', error);
       return;
     }
 
-    if (activeGames && activeGames.length > 0) {
-      const activeGame = activeGames[0];
-      setGameId(activeGame.id);
+    let activeGame;
+    if (!existingGame || existingGame.length === 0) {
+      // Create global session in DB if it doesn't exist
+      const { data: newGame, error: insertError } = await supabase
+        .from('cat_game')
+        .insert([{
+          id: GLOBAL_GAME_ID,
+          status: 'intro',
+          round: 0,
+          round_type: 'normal',
+          used_cats: [],
+          used_players: [],
+        }])
+        .select()
+        .single();
 
+      if (insertError) {
+        console.error('Error creating global cat game:', insertError);
+        return;
+      }
+      activeGame = newGame;
+    } else {
+      activeGame = existingGame[0];
+    }
+
+    setGameId(GLOBAL_GAME_ID);
+    setIsHost(true);
+
+    if (activeGame.status !== 'intro') {
       setGameState({
         phase: activeGame.status as GamePhase,
         round: activeGame.round,
@@ -872,121 +927,72 @@ export default function CatCopyPage() {
         chaosActive: activeGame.status === 'reveal',
         challengeTime: activeGame.round_type === 'nightmare' ? 5 : 10,
       });
-
-      await joinGameRoom(activeGame.id);
     }
   }, [guestName]);
 
-  // Join a room helper
-  const joinGameRoom = async (gid: string) => {
-    if (!guestName) return;
+  const handleJoinLobby = async () => {
+    if (!guestName || !gameId) return;
 
+    // Add player to cat_players list if they aren't already there
     const { data: existingPlayer } = await supabase
       .from('cat_players')
       .select('*')
-      .eq('game_id', gid)
+      .eq('game_id', gameId)
       .eq('player_name', guestName)
       .limit(1);
 
-    if (existingPlayer && existingPlayer.length > 0) {
-      setIsHost(existingPlayer[0].is_host);
-      return;
+    if (!existingPlayer || existingPlayer.length === 0) {
+      const { error: insertError } = await supabase.from('cat_players').insert([{
+        game_id: gameId,
+        player_name: guestName,
+        is_host: true,
+      }]);
+      if (insertError) {
+        console.error('Error joining cat players list:', insertError);
+      }
     }
 
-    const { error } = await supabase.from('cat_players').insert([{
-      game_id: gid,
-      player_name: guestName,
-      is_host: false,
-    }]);
+    // Instantly refetch players list locally so the current user sees themselves in the list
+    await fetchPlayersList();
 
-    if (error) {
-      console.error('Error joining cat players list:', error);
-    }
-  };
-
-  // Create game room (acting as host)
-  const createGameRoom = async () => {
-    if (!guestName) return;
-
-    const { data: newGame, error } = await supabase
+    // Check current state in DB and open waiting room if status is currently intro/scoreboard
+    const { data: currentGame } = await supabase
       .from('cat_game')
-      .insert([{
-        status: 'lobby',
-        round: 0,
-        round_type: 'normal',
-      }])
-      .select()
+      .select('status')
+      .eq('id', gameId)
       .single();
 
-    if (error || !newGame) {
-      console.error('Error creating cat game room:', error);
-      return;
+    if (currentGame && (currentGame.status === 'intro' || currentGame.status === 'scoreboard')) {
+      await supabase
+        .from('cat_game')
+        .update({ status: 'lobby' })
+        .eq('id', gameId);
+    } else {
+      setGameState((prev) => ({
+        ...prev,
+        phase: 'lobby',
+      }));
     }
-
-    setGameId(newGame.id);
-    setIsHost(true);
-    setGameState({
-      phase: 'lobby',
-      round: 0,
-      currentPlayer: null,
-      currentCat: null,
-      roundType: 'normal',
-      usedCats: [],
-      usedPlayers: [],
-      results: [],
-      eliminatedIds: [],
-      chaosActive: false,
-      challengeTime: 10,
-    });
-
-    await supabase.from('cat_players').insert([{
-      game_id: newGame.id,
-      player_name: guestName,
-      is_host: true,
-    }]);
   };
 
-  // Run discovery on load
+  // Run discovery/initialization on load
   useEffect(() => {
     const searchTimer = setTimeout(() => {
       setIsSearching(false);
     }, 1500);
 
-    discoverAndJoinGame().finally(() => {
+    initializeGlobalGame().finally(() => {
       setIsSearching(false);
       clearTimeout(searchTimer);
     });
-  }, [discoverAndJoinGame]);
+  }, [initializeGlobalGame]);
 
   // Realtime subscription setup
   useEffect(() => {
     if (!gameId) return;
 
-    const fetchPlayersList = async () => {
-      const { data } = await supabase
-        .from('cat_players')
-        .select('player_name, is_host')
-        .eq('game_id', gameId);
-      if (data) {
-        setJoinedPlayers(data as { player_name: string; is_host: boolean }[]);
-        const me = (data as { player_name: string; is_host: boolean }[]).find((p) => p.player_name === guestName);
-        if (me) {
-          setIsHost(me.is_host);
-        }
-      }
-    };
     fetchPlayersList();
 
-    const fetchVotesList = async (currentRound: number) => {
-      const { data } = await supabase
-        .from('cat_votes')
-        .select('voter_name, score')
-        .eq('game_id', gameId)
-        .eq('round', currentRound);
-      if (data) {
-        setVotesList(data);
-      }
-    };
     if (gameState.round > 0) {
       fetchVotesList(gameState.round);
     }
@@ -1033,7 +1039,7 @@ export default function CatCopyPage() {
     return () => {
       supabase.removeChannel(gameChannel);
     };
-  }, [gameId, gameState.round, guestName]);
+  }, [gameId, gameState.round, fetchPlayersList, fetchVotesList]);
 
   // Fetch final votes list for scoreboard display
   const fetchAllVotesForGame = useCallback(async () => {
@@ -1055,7 +1061,7 @@ export default function CatCopyPage() {
 
   // Start game triggers roulette
   const handleStart = useCallback(async () => {
-    if (!gameId || !isHost) return;
+    if (!gameId) return;
 
     const round = 1;
     const roundType = getRoundType(round);
@@ -1072,7 +1078,7 @@ export default function CatCopyPage() {
         used_players: [],
       })
       .eq('id', gameId);
-  }, [gameId, isHost]);
+  }, [gameId]);
 
   // Player selected from roulette
   const handlePlayerSelected = useCallback(
@@ -1099,26 +1105,21 @@ export default function CatCopyPage() {
   // Cat memorization countdown finishes
   const handleRevealDone = useCallback(async () => {
     if (!gameId) return;
-    if (gameState.currentPlayer === guestName || isHost) {
-      await supabase
-        .from('cat_game')
-        .update({ status: 'hold' })
-        .eq('id', gameId);
-    }
-  }, [gameId, gameState.currentPlayer, guestName, isHost]);
+    await supabase
+      .from('cat_game')
+      .update({ status: 'hold' })
+      .eq('id', gameId);
+  }, [gameId]);
 
   // Drawing phase finishes
   const handleHoldDone = useCallback(async () => {
     if (!gameId) return;
-    if (gameState.currentPlayer === guestName || isHost) {
-      await supabase
-        .from('cat_game')
-        .update({ status: 'voting' })
-        .eq('id', gameId);
-    }
-  }, [gameId, gameState.currentPlayer, guestName, isHost]);
+    await supabase
+      .from('cat_game')
+      .update({ status: 'voting' })
+      .eq('id', gameId);
+  }, [gameId]);
 
-  // Single rating submitted
   const handleVotesSubmitted = useCallback(
     async (score: number) => {
       if (!gameId || !guestName || !gameState.currentPlayer) return;
@@ -1135,24 +1136,27 @@ export default function CatCopyPage() {
 
       if (error) {
         console.error('Error submitting vote rating:', error);
+      } else {
+        // Refetch votes list locally so current guest's screen updates instantly
+        fetchVotesList(gameState.round);
       }
     },
-    [gameId, gameState.round, guestName, gameState.currentPlayer]
+    [gameId, gameState.round, guestName, gameState.currentPlayer, fetchVotesList]
   );
 
   // Host reveals round results
   const handleRevealResults = useCallback(async () => {
-    if (!gameId || !isHost) return;
+    if (!gameId) return;
 
     await supabase
       .from('cat_game')
       .update({ status: 'result' })
       .eq('id', gameId);
-  }, [gameId, isHost]);
+  }, [gameId]);
 
   // Host transitions to next round
   const handleNextRound = useCallback(async () => {
-    if (!gameId || !isHost) return;
+    if (!gameId) return;
 
     const nextRound = gameState.round + 1;
     const roundType = getRoundType(nextRound);
@@ -1167,21 +1171,21 @@ export default function CatCopyPage() {
         current_cat: null,
       })
       .eq('id', gameId);
-  }, [gameId, isHost, gameState.round]);
+  }, [gameId, gameState.round]);
 
   // Host ends game
   const handleEndGame = useCallback(async () => {
-    if (!gameId || !isHost) return;
+    if (!gameId) return;
 
     await supabase
       .from('cat_game')
       .update({ status: 'scoreboard' })
       .eq('id', gameId);
-  }, [gameId, isHost]);
+  }, [gameId]);
 
   // Reset game session completely
   const handlePlayAgain = useCallback(async () => {
-    if (!gameId || !isHost) return;
+    if (!gameId) return;
 
     await supabase.from('cat_votes').delete().eq('game_id', gameId);
 
@@ -1198,7 +1202,7 @@ export default function CatCopyPage() {
       .eq('id', gameId);
 
     setShowScoreboard(false);
-  }, [gameId, isHost]);
+  }, [gameId]);
 
   // Get voters (all players except current player)
   const currentVoters = useMemo(() => {
@@ -1258,24 +1262,71 @@ export default function CatCopyPage() {
               <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-3">
                 Real-Time Party Game
               </span>
+              <div style={{ fontSize: '48px', lineHeight: 1, marginBottom: '12px' }}>🐱</div>
               <h1 className="text-4xl md:text-6xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)] mb-4">
-                🐱 cat copy challenge
+                cat copy challenge
+              </h1>
+              <p className="text-centered" style={{ fontSize: '14px', color: 'var(--color-dust)', maxWidth: '448px', margin: '0 auto 48px', lineHeight: '1.7' }}>
+                Connecting to global game session...
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  if (gameState.phase === 'intro') {
+    return (
+      <PageWrapper className="bg-[var(--color-parchment)]">
+        <div className="page-container cat-copy-page">
+          <button
+            onClick={() => navigate('/games')}
+            className="game-back-link"
+          >
+            ← Back to Games
+          </button>
+
+          <div className="cat-intro">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="text-centered"
+            >
+              <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-3">
+                Real-Time Party Game
+              </span>
+              <div style={{ fontSize: '48px', lineHeight: 1, marginBottom: '12px' }}>🐱</div>
+              <h1 className="text-4xl md:text-6xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)] mb-4">
+                cat copy challenge
               </h1>
               <p className="text-centered" style={{ fontSize: '14px', color: 'var(--color-dust)', maxWidth: '448px', margin: '0 auto 48px', lineHeight: '1.7' }}>
                 A cat image will flash on screen. Recreate it by drawing or posing, and get voted on by everyone else in real time!
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', marginTop: '24px' }}>
-                {isSearching ? (
-                  <p className="text-xs text-[var(--color-dust)] uppercase tracking-wider">Searching for active game rooms...</p>
-                ) : (
-                  <>
-                    <Button variant="primary" onClick={createGameRoom}>
-                      Create Game Room
-                    </Button>
-                    <p className="text-[10px] uppercase tracking-wider text-[var(--color-dust)]">Or open the link on another phone to join automatically</p>
-                  </>
-                )}
+              <div className="cat-rules-grid">
+                <Card className="text-centered">
+                  <div className="text-2xl mb-2">👀</div>
+                  <p className="text-[10px] uppercase tracking-widest text-[var(--color-dust)] mb-1">Step 1</p>
+                  <p className="text-xs text-[var(--color-ink)]">Memorize the cat</p>
+                </Card>
+                <Card className="text-centered">
+                  <div className="text-2xl mb-2">✏️</div>
+                  <p className="text-[10px] uppercase tracking-widest text-[var(--color-dust)] mb-1">Step 2</p>
+                  <p className="text-xs text-[var(--color-ink)]">Recreate it</p>
+                </Card>
+                <Card className="text-centered">
+                  <div className="text-2xl mb-2">⭐</div>
+                  <p className="text-[10px] uppercase tracking-widest text-[var(--color-dust)] mb-1">Step 3</p>
+                  <p className="text-xs text-[var(--color-ink)]">Everyone votes</p>
+                </Card>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40px' }}>
+                <Button variant="primary" onClick={handleJoinLobby}>
+                  Let's Go →
+                </Button>
               </div>
             </motion.div>
           </div>
@@ -1297,7 +1348,7 @@ export default function CatCopyPage() {
                   .eq('game_id', gameId)
                   .eq('player_name', guestName || '');
               }
-              setGameId(null);
+              navigate('/games');
             }}
             className="game-back-link"
           >
@@ -1308,11 +1359,11 @@ export default function CatCopyPage() {
             <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
               Waiting Room
             </span>
-            <h1 className="text-3xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)] mb-8">
+            <h1 className="text-3xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
               Cat Copy Lobby
             </h1>
 
-            <div style={{ maxWidth: '400px', margin: '0 auto 32px' }}>
+            <div style={{ maxWidth: '400px', margin: '40px auto 32px' }}>
               <p className="text-xs uppercase tracking-widest text-[var(--color-dust)] mb-4">
                 Joined Players ({joinedPlayers.length})
               </p>
@@ -1323,7 +1374,6 @@ export default function CatCopyPage() {
                     <Card key={player.player_name} className="flex flex-col items-center p-3 text-centered bg-[var(--color-cream)]">
                       <img src={info.avatar} alt={info.name} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', marginBottom: '8px' }} />
                       <span className="text-xs uppercase tracking-wider font-semibold text-[var(--color-ink)]">{info.name}</span>
-                      {player.is_host && <span className="text-[9px] uppercase tracking-widest text-[var(--color-crimson)] mt-1">Host</span>}
                     </Card>
                   );
                 })}
@@ -1331,15 +1381,9 @@ export default function CatCopyPage() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
-              {isHost ? (
-                <Button variant="primary" onClick={handleStart} disabled={joinedPlayers.length < 2}>
-                  Start Game ({joinedPlayers.length} players) →
-                </Button>
-              ) : (
-                <p className="text-xs uppercase tracking-[0.15em] text-[var(--color-dust)] pulsing">
-                  Waiting for host to start the game...
-                </p>
-              )}
+              <Button variant="primary" onClick={handleStart} disabled={joinedPlayers.length < 2}>
+                Start Game ({joinedPlayers.length} players) →
+              </Button>
             </div>
           </div>
         </div>
@@ -1377,14 +1421,12 @@ export default function CatCopyPage() {
     <PageWrapper className="bg-[var(--color-parchment)]">
       <div className="page-container cat-copy-page">
         {/* Back button */}
-        {true && (
-          <button
-            onClick={() => navigate('/games')}
-            className="game-back-link"
-          >
-            ← Back to Games
-          </button>
-        )}
+        <button
+          onClick={() => navigate('/games')}
+          className="game-back-link"
+        >
+          ← Back to Games
+        </button>
 
         <AnimatePresence mode="wait">
           {gameState.phase === 'roulette' && (
@@ -1418,17 +1460,15 @@ export default function CatCopyPage() {
                 onSubmitVote={handleVotesSubmitted}
                 guestName={guestName || ''}
               />
-              {isHost && (
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
-                  <Button
-                    variant="primary"
-                    onClick={handleRevealResults}
-                    disabled={votesList.length < currentVoters.length}
-                  >
-                    Reveal Results ({votesList.length}/{currentVoters.length} votes) →
-                  </Button>
-                </div>
-              )}
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
+                <Button
+                  variant="primary"
+                  onClick={handleRevealResults}
+                  disabled={votesList.length < currentVoters.length}
+                >
+                  Reveal Results ({votesList.length}/{currentVoters.length} votes) →
+                </Button>
+              </div>
             </motion.div>
           )}
 

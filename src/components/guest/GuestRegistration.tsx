@@ -74,7 +74,7 @@ export default function GuestRegistration({ force = false }: GuestRegistrationPr
               <h2 className="text-3xl font-light font-[family-name:var(--font-display)] tracking-tight mb-2" style={{ color: 'var(--color-cream)' }}>
                 Who are you?
               </h2>
-              <p className="text-xs text-[var(--color-dust)] leading-relaxed mx-auto mb-8 text-center" style={{ maxWidth: '420px' }}>
+              <p className="text-xs text-[var(--color-dust)] leading-relaxed mx-auto mb-8 text-centered" style={{ maxWidth: '420px', textAlign: 'center' }}>
                 Select your character card to enter the memory capsule and start playing.
               </p>
             </div>

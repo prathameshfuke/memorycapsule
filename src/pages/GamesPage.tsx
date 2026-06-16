@@ -433,22 +433,30 @@ function InteractiveVotingGame({
         ← Back to Games
       </button>
 
-      <div className="text-centered" style={{ marginBottom: '40px' }}>
+      <div className="text-centered" style={{ marginBottom: '24px' }}>
         <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
           {eyebrow}
         </span>
-        <h2 className="text-4xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
+        <h2 className="text-3xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)]">
           {title}
         </h2>
       </div>
 
-      <Card className="py-8 px-6 text-centered mb-8 bg-[var(--color-cream)]">
-        <p className="text-xl md:text-2xl font-light leading-relaxed font-[family-name:var(--font-display)] text-[var(--color-ink)]">
+      <Card className="py-6 px-5 text-centered mb-6 bg-[var(--color-cream)]">
+        <p className="text-lg md:text-2xl font-light leading-relaxed font-[family-name:var(--font-display)] text-[var(--color-ink)]">
           "{question.text}"
         </p>
       </Card>
 
-      <div className="mb-8 grid grid-cols-2 gap-4">
+      {/* Instruction */}
+      {!myVote && (
+        <p className="text-centered text-[10px] uppercase tracking-widest text-[var(--color-dust)] mb-4">
+          Tap a guest to vote
+        </p>
+      )}
+
+      {/* Voting Grid — compact 3-col on mobile */}
+      <div className="mb-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
         {GUESTS.map((guest) => {
           const info = getGuestInfo(guest.id);
           const hasVoted = myVote !== null;
@@ -460,39 +468,37 @@ function InteractiveVotingGame({
             <Card
               key={guest.id}
               onClick={hasVoted || isLoading ? undefined : () => castVote(info.name)}
-              className={`relative flex flex-col items-center justify-between p-3 border text-centered transition-all duration-300 min-h-[135px] ${
-                hasVoted
+              className={`relative flex flex-col items-center justify-center p-2 border text-centered transition-all duration-300 min-h-0 ${hasVoted
                   ? isMySelection
                     ? 'border-[var(--color-crimson)] bg-[var(--color-cream)] scale-[1.02]'
-                    : 'border-[var(--color-dust)]/40 opacity-75'
-                  : 'border-[var(--color-dust)] hover:border-[var(--color-ember)] cursor-pointer active:scale-[0.98]'
-              }`}
+                    : 'border-[var(--color-dust)]/40 opacity-60'
+                  : 'border-[var(--color-dust)] hover:border-[var(--color-ember)] cursor-pointer active:scale-[0.96]'
+                }`}
             >
-              {/* Avatar Frame */}
-              <div className="w-14 h-14 rounded-full overflow-hidden border border-[var(--color-dust)]/40 mb-2 flex items-center justify-center bg-[var(--color-cream)]">
+              {/* Avatar */}
+              <div className="rounded-full overflow-hidden border border-[var(--color-dust)]/40 mb-1.5 flex items-center justify-center bg-[var(--color-cream)]"
+                style={{ width: '44px', height: '44px' }}
+              >
                 <img src={info.avatar} alt={info.name} className="w-full h-full object-cover" />
               </div>
 
               {/* Name */}
-              <span className="text-xs uppercase tracking-wider font-semibold text-[var(--color-ink)] mb-1">
+              <span className="text-[9px] uppercase tracking-wider font-semibold text-[var(--color-ink)] leading-tight">
                 {info.name}
               </span>
 
-              {/* Vote result progress */}
+              {/* Vote result */}
               {hasVoted && (
-                <div className="mt-2 w-full">
-                  <div className="w-full bg-[var(--color-dust)]/20 h-1.5 rounded-full overflow-hidden">
+                <div className="mt-1.5 w-full">
+                  <div className="w-full bg-[var(--color-dust)]/20 h-1 rounded-full overflow-hidden">
                     <div
                       className={`h-full ${isMySelection ? 'bg-[var(--color-crimson)]' : 'bg-[var(--color-dust)]'}`}
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
-                  <div className="flex justify-between items-center mt-1 text-[9px] uppercase tracking-wider text-[var(--color-dust)]">
-                    <span>
-                      {voteCount} vote{voteCount !== 1 ? 's' : ''}
-                    </span>
-                    <span className="font-bold">{percentage}%</span>
-                  </div>
+                  <p className="text-[8px] uppercase tracking-wider text-[var(--color-dust)] mt-0.5 text-center">
+                    {percentage}%
+                  </p>
                 </div>
               )}
             </Card>
