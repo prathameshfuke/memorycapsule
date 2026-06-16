@@ -42,3 +42,9 @@ create table if not exists cat_votes (
 alter publication supabase_realtime add table cat_game;
 alter publication supabase_realtime add table cat_players;
 alter publication supabase_realtime add table cat_votes;
+
+-- Alter table to support player presence, activity tracking, and recovery
+alter table cat_players add column if not exists last_seen timestamptz default now();
+alter table cat_players add column if not exists is_connected boolean default true;
+alter table cat_players add column if not exists updated_at timestamptz default now();
+

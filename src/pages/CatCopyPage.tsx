@@ -515,6 +515,19 @@ interface VoteItem {
   score: number;
 }
 
+function getPlayerPresence(player: { is_connected?: boolean; last_seen?: string }) {
+  if (player.is_connected) {
+    return { label: 'connected', color: '#10B981', emoji: '🟢' };
+  }
+  const lastSeenTime = player.last_seen ? new Date(player.last_seen).getTime() : 0;
+  const secondsAgo = (Date.now() - lastSeenTime) / 1000;
+  
+  if (secondsAgo < 45) {
+    return { label: 'reconnecting', color: '#FBBF24', emoji: '🟡' };
+  }
+  return { label: 'away', color: '#9CA3AF', emoji: '⚪' };
+}
+
 function VotingScreen({
   playerName,
   catImage,
@@ -522,6 +535,7 @@ function VotingScreen({
   votesList,
   onSubmitVote,
   guestName,
+  joinedPlayers,
 }: {
   playerName: string;
   catImage: string;
@@ -529,6 +543,7 @@ function VotingScreen({
   votesList: VoteItem[];
   onSubmitVote: (score: number) => void;
   guestName: string;
+  joinedPlayers: { player_name: string; is_host: boolean; is_connected?: boolean; last_seen?: string }[];
 }) {
   const [selectedScore, setSelectedScore] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -560,7 +575,7 @@ function VotingScreen({
         <div className="cat-voting-comparison" style={{ display: 'flex', gap: '24px', justifyContent: 'center', marginBottom: '32px', flexWrap: 'wrap' }}>
           <div className="cat-voting-original" style={{ flex: '1', minWidth: '160px', maxWidth: '240px' }}>
             <p className="text-[10px] uppercase tracking-widest text-[var(--color-dust)] mb-2">
-              Original
+              Original Cat
             </p>
             <img src={catImage} alt="Original cat" className="cat-voting-img" style={{ width: '100%', height: 'auto', borderRadius: '8px' }} />
           </div>
@@ -583,11 +598,20 @@ function VotingScreen({
             <div className="cat-voting-voters" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {voters.map((voter) => {
                 const voted = votesList.some((v) => v.voter_name === voter.name);
+                const playerPresence = joinedPlayers.find((p) => p.player_name === voter.name);
+                const presence = playerPresence ? getPlayerPresence(playerPresence) : { emoji: '🟢', label: 'connected', color: '#10B981' };
+
                 return (
                   <div key={voter.id} className="cat-voter-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--color-cream)', border: '1px solid var(--color-dust)', borderRadius: '4px' }}>
                     <div className="cat-voter-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <img src={voter.avatar} alt={voter.name} className="cat-voter-avatar" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
-                      <span className="text-xs text-[var(--color-ink)]">{voter.name}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        <span className="text-xs text-[var(--color-ink)] font-semibold">{voter.name}</span>
+                        <span style={{ fontSize: '8px', color: presence.color, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          <span>{presence.emoji}</span>
+                          <span>{presence.label}</span>
+                        </span>
+                      </div>
                     </div>
                     <span className="text-xs font-semibold" style={{ color: voted ? 'var(--color-red)' : 'var(--color-dust)' }}>
                       {voted ? 'Voted ✓' : 'Voting...'}
@@ -635,6 +659,8 @@ function VotingScreen({
     </div>
   );
 }
+
+
 
 /* Result Screen */
 function ResultScreen({
@@ -812,12 +838,24 @@ export default function CatCopyPage() {
 
   // Multiplayer realtime states
   const [gameId, setGameId] = useState<string | null>(GLOBAL_GAME_ID);
-  const [isHost, setIsHost] = useState(true); // Everyone has host control
-  const [joinedPlayers, setJoinedPlayers] = useState<{ player_name: string; is_host: boolean }[]>([]);
+  const [joinedPlayers, setJoinedPlayers] = useState<{
+    player_name: string;
+    is_host: boolean;
+    is_connected?: boolean;
+    last_seen?: string;
+    joined_at?: string;
+  }[]>([]);
   const [votesList, setVotesList] = useState<VoteItem[]>([]);
   const [allVotesForGame, setAllVotesForGame] = useState<AllVotesItem[]>([]);
   const [isSearching, setIsSearching] = useState(true);
+  const [isRejoining, setIsRejoining] = useState(false);
+  const [rejoiningName, setRejoiningName] = useState('');
 
+  const isHost = useMemo(() => {
+    if (!guestName || joinedPlayers.length === 0) return false;
+    const self = joinedPlayers.find((p) => p.player_name === guestName);
+    return self ? self.is_host : false;
+  }, [joinedPlayers, guestName]);
 
   // Get eligible players from the joined player list
   const activePlayers = useMemo(() => {
@@ -841,20 +879,68 @@ export default function CatCopyPage() {
     [activePlayers]
   );
 
-  // Helper functions to fetch lists (extracted to useCallback)
+  // Host handover detection & execution
+  const evaluateHostStatus = useCallback(async (players: { player_name: string; is_host: boolean; is_connected?: boolean; last_seen?: string; joined_at?: string }[]) => {
+    if (!GLOBAL_GAME_ID || !guestName || players.length === 0) return;
+
+    const currentHost = players.find(p => p.is_host);
+
+    let hostNeedsReplacement = false;
+    if (!currentHost) {
+      hostNeedsReplacement = true;
+    } else {
+      const lastSeenTime = currentHost.last_seen ? new Date(currentHost.last_seen).getTime() : 0;
+      const secondsAgo = (Date.now() - lastSeenTime) / 1000;
+      if (!currentHost.is_connected && secondsAgo > 120) {
+        hostNeedsReplacement = true;
+      }
+    }
+
+    if (hostNeedsReplacement) {
+      const activeConnectedPlayers = players.filter(p => {
+        const presence = getPlayerPresence(p);
+        return presence.label === 'connected';
+      });
+
+      if (activeConnectedPlayers.length > 0) {
+        // Sort alphabetically to be deterministic across all clients
+        activeConnectedPlayers.sort((a, b) => a.player_name.localeCompare(b.player_name));
+        const newHostCandidate = activeConnectedPlayers[0];
+
+        if (newHostCandidate.player_name === guestName) {
+          console.log(`Host handover: transferring host to ${guestName}`);
+          
+          await supabase
+            .from('cat_players')
+            .update({ is_host: false })
+            .eq('game_id', GLOBAL_GAME_ID);
+
+          await supabase
+            .from('cat_players')
+            .update({ is_host: true })
+            .eq('game_id', GLOBAL_GAME_ID)
+            .eq('player_name', guestName);
+        }
+      }
+    }
+  }, [guestName]);
+
+  // Helper functions to fetch lists
   const fetchPlayersList = useCallback(async () => {
     if (!GLOBAL_GAME_ID) return;
     const { data, error } = await supabase
       .from('cat_players')
-      .select('player_name, is_host')
+      .select('player_name, is_host, is_connected, last_seen, joined_at')
       .eq('game_id', GLOBAL_GAME_ID);
     if (error) {
       console.error('Error fetching players list:', error);
     }
     if (data) {
-      setJoinedPlayers(data as { player_name: string; is_host: boolean }[]);
+      const typedData = data as { player_name: string; is_host: boolean; is_connected?: boolean; last_seen?: string; joined_at?: string }[];
+      setJoinedPlayers(typedData);
+      evaluateHostStatus(typedData);
     }
-  }, []);
+  }, [evaluateHostStatus]);
 
   const fetchVotesList = useCallback(async (currentRound: number) => {
     if (!GLOBAL_GAME_ID) return;
@@ -874,6 +960,20 @@ export default function CatCopyPage() {
   const initializeGlobalGame = useCallback(async () => {
     if (!guestName) return;
 
+    // Check localStorage session
+    const storedSession = localStorage.getItem('cat_session');
+    let savedGameId = null;
+    let savedPlayerName = null;
+    if (storedSession) {
+      try {
+        const parsed = JSON.parse(storedSession);
+        savedGameId = parsed.gameId;
+        savedPlayerName = parsed.playerName;
+      } catch (e) {
+        console.error('Failed to parse cat_session', e);
+      }
+    }
+
     const { data: existingGame, error } = await supabase
       .from('cat_game')
       .select('*')
@@ -887,7 +987,6 @@ export default function CatCopyPage() {
 
     let activeGame;
     if (!existingGame || existingGame.length === 0) {
-      // Create global session in DB if it doesn't exist
       const { data: newGame, error: insertError } = await supabase
         .from('cat_game')
         .insert([{
@@ -911,9 +1010,47 @@ export default function CatCopyPage() {
     }
 
     setGameId(GLOBAL_GAME_ID);
-    setIsHost(true);
 
-    if (activeGame.status !== 'intro') {
+    if (savedGameId && savedPlayerName && activeGame) {
+      setIsRejoining(true);
+      setRejoiningName(savedPlayerName);
+
+      // Verify and restore player in database
+      const { data: existingPlayer } = await supabase
+        .from('cat_players')
+        .select('*')
+        .eq('game_id', GLOBAL_GAME_ID)
+        .eq('player_name', savedPlayerName)
+        .limit(1);
+
+      if (!existingPlayer || existingPlayer.length === 0) {
+        const { data: hosts } = await supabase
+          .from('cat_players')
+          .select('player_name')
+          .eq('game_id', GLOBAL_GAME_ID)
+          .eq('is_host', true);
+
+        const hasHost = hosts && hosts.length > 0;
+
+        await supabase.from('cat_players').insert([{
+          game_id: GLOBAL_GAME_ID,
+          player_name: savedPlayerName,
+          is_host: !hasHost,
+        }]);
+      } else {
+        await supabase
+          .from('cat_players')
+          .update({
+            is_connected: true,
+            last_seen: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('game_id', GLOBAL_GAME_ID)
+          .eq('player_name', savedPlayerName);
+      }
+
+      await fetchPlayersList();
+
       setGameState({
         phase: activeGame.status as GamePhase,
         round: activeGame.round,
@@ -927,8 +1064,111 @@ export default function CatCopyPage() {
         chaosActive: activeGame.status === 'reveal',
         challengeTime: activeGame.round_type === 'nightmare' ? 5 : 10,
       });
+
+      setTimeout(() => {
+        setIsRejoining(false);
+      }, 1500);
+    } else {
+      localStorage.removeItem('cat_session');
+
+      // Fetch players list first to determine initial states
+      const { data: players } = await supabase
+        .from('cat_players')
+        .select('player_name, is_host, is_connected, last_seen, joined_at')
+        .eq('game_id', GLOBAL_GAME_ID);
+      
+      if (players) {
+        const typedData = players as { player_name: string; is_host: boolean; is_connected?: boolean; last_seen?: string; joined_at?: string }[];
+        setJoinedPlayers(typedData);
+        evaluateHostStatus(typedData);
+      }
+
+      if (activeGame.status !== 'intro') {
+        setGameState({
+          phase: activeGame.status as GamePhase,
+          round: activeGame.round,
+          currentPlayer: activeGame.current_player,
+          currentCat: activeGame.current_cat,
+          roundType: (activeGame.round_type || 'normal') as RoundType,
+          usedCats: activeGame.used_cats || [],
+          usedPlayers: activeGame.used_players || [],
+          results: [],
+          eliminatedIds: [],
+          chaosActive: activeGame.status === 'reveal',
+          challengeTime: activeGame.round_type === 'nightmare' ? 5 : 10,
+        });
+      }
+    }
+  }, [guestName, fetchPlayersList, evaluateHostStatus]);
+
+  const updateHeartbeat = useCallback(async (connected: boolean = true) => {
+    if (!GLOBAL_GAME_ID || !guestName) return;
+    try {
+      await supabase
+        .from('cat_players')
+        .update({
+          last_seen: new Date().toISOString(),
+          is_connected: connected,
+          updated_at: new Date().toISOString()
+        })
+        .eq('game_id', GLOBAL_GAME_ID)
+        .eq('player_name', guestName);
+    } catch (err) {
+      console.error('Error sending heartbeat:', err);
     }
   }, [guestName]);
+
+  // Heartbeat loop and visibility state changes listener
+  useEffect(() => {
+    if (!gameId || !guestName) return;
+
+    // Initial heartbeat
+    updateHeartbeat(true);
+
+    const heartbeatInterval = setInterval(() => {
+      updateHeartbeat(true);
+    }, 20000);
+
+    const handleBeforeUnload = () => {
+      // Use keepalive fetch to ensure the disconnect update goes through when browser closes
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+      if (supabaseUrl && supabaseKey) {
+        const url = `${supabaseUrl}/rest/v1/cat_players?game_id=eq.${gameId}&player_name=eq.${encodeURIComponent(guestName)}`;
+        fetch(url, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`
+          },
+          body: JSON.stringify({ is_connected: false, last_seen: new Date().toISOString() }),
+          keepalive: true
+        }).catch(err => console.error('Keepalive disconnect fetch failed:', err));
+      }
+      updateHeartbeat(false);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        updateHeartbeat(false);
+      } else {
+        updateHeartbeat(true);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(heartbeatInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      updateHeartbeat(false);
+    };
+  }, [gameId, guestName, updateHeartbeat]);
 
   const handleJoinLobby = async () => {
     if (!guestName || !gameId) return;
@@ -942,15 +1182,33 @@ export default function CatCopyPage() {
       .limit(1);
 
     if (!existingPlayer || existingPlayer.length === 0) {
+      // Find if any host exists
+      const { data: hosts } = await supabase
+        .from('cat_players')
+        .select('player_name')
+        .eq('game_id', gameId)
+        .eq('is_host', true);
+      
+      const hasHost = hosts && hosts.length > 0;
+
       const { error: insertError } = await supabase.from('cat_players').insert([{
         game_id: gameId,
         player_name: guestName,
-        is_host: true,
+        is_host: !hasHost,
       }]);
       if (insertError) {
         console.error('Error joining cat players list:', insertError);
       }
     }
+
+    // Save session locally
+    localStorage.setItem(
+      'cat_session',
+      JSON.stringify({
+        gameId: gameId,
+        playerName: guestName
+      })
+    );
 
     // Instantly refetch players list locally so the current user sees themselves in the list
     await fetchPlayersList();
@@ -1241,12 +1499,37 @@ export default function CatCopyPage() {
 
   /* ─── Render ─── */
 
+  if (isRejoining) {
+    return (
+      <PageWrapper className="bg-[var(--color-parchment)]">
+        <div className="page-container cat-copy-page flex flex-col items-center justify-center min-h-[60vh]">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-centered"
+          >
+            <div style={{ fontSize: '64px', marginBottom: '20px' }}>🐱✨</div>
+            <h1 className="text-3xl md:text-5xl font-light text-[var(--color-ink)] font-[family-name:var(--font-display)] mb-4">
+              Welcome back, {rejoiningName}
+            </h1>
+            <p className="text-sm text-[var(--color-dust)] animate-pulse">
+              Rejoining game session...
+            </p>
+          </motion.div>
+        </div>
+      </PageWrapper>
+    );
+  }
+
   if (!gameId) {
     return (
       <PageWrapper className="bg-[var(--color-parchment)]">
         <div className="page-container cat-copy-page">
           <button
-            onClick={() => navigate('/games')}
+            onClick={() => {
+              localStorage.removeItem('cat_session');
+              navigate('/games');
+            }}
             className="game-back-link"
           >
             ← Back to Games
@@ -1281,7 +1564,10 @@ export default function CatCopyPage() {
       <PageWrapper className="bg-[var(--color-parchment)]">
         <div className="page-container cat-copy-page">
           <button
-            onClick={() => navigate('/games')}
+            onClick={() => {
+              localStorage.removeItem('cat_session');
+              navigate('/games');
+            }}
             className="game-back-link"
           >
             ← Back to Games
@@ -1348,6 +1634,7 @@ export default function CatCopyPage() {
                   .eq('game_id', gameId)
                   .eq('player_name', guestName || '');
               }
+              localStorage.removeItem('cat_session');
               navigate('/games');
             }}
             className="game-back-link"
@@ -1370,10 +1657,21 @@ export default function CatCopyPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 {joinedPlayers.map((player) => {
                   const info = getGuestInfo(player.player_name);
+                  const presence = getPlayerPresence(player);
                   return (
-                    <Card key={player.player_name} className="flex flex-col items-center p-3 text-centered bg-[var(--color-cream)]">
+                    <Card key={player.player_name} className="flex flex-col items-center p-3 text-centered bg-[var(--color-cream)] relative">
+                      <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px' }} title={presence.label}>
+                        <span>{presence.emoji}</span>
+                      </div>
                       <img src={info.avatar} alt={info.name} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', marginBottom: '8px' }} />
-                      <span className="text-xs uppercase tracking-wider font-semibold text-[var(--color-ink)]">{info.name}</span>
+                      <span className="text-xs uppercase tracking-wider font-semibold text-[var(--color-ink)]">
+                        {info.name} {player.is_host && '👑'}
+                      </span>
+                      {presence.label !== 'connected' && (
+                        <span style={{ fontSize: '8px', color: presence.color, textTransform: 'uppercase', fontWeight: 'bold', marginTop: '2px' }}>
+                          {presence.label}
+                        </span>
+                      )}
                     </Card>
                   );
                 })}
@@ -1381,9 +1679,15 @@ export default function CatCopyPage() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
-              <Button variant="primary" onClick={handleStart} disabled={joinedPlayers.length < 2}>
-                Start Game ({joinedPlayers.length} players) →
-              </Button>
+              {isHost ? (
+                <Button variant="primary" onClick={handleStart} disabled={joinedPlayers.length < 2}>
+                  Start Game ({joinedPlayers.length} players) →
+                </Button>
+              ) : (
+                <div className="text-sm text-[var(--color-dust)]">
+                  Waiting for host to start the game...
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1422,7 +1726,10 @@ export default function CatCopyPage() {
       <div className="page-container cat-copy-page">
         {/* Back button */}
         <button
-          onClick={() => navigate('/games')}
+          onClick={() => {
+            localStorage.removeItem('cat_session');
+            navigate('/games');
+          }}
           className="game-back-link"
         >
           ← Back to Games
@@ -1459,6 +1766,7 @@ export default function CatCopyPage() {
                 votesList={votesList}
                 onSubmitVote={handleVotesSubmitted}
                 guestName={guestName || ''}
+                joinedPlayers={joinedPlayers}
               />
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
                 <Button
