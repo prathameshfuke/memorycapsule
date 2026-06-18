@@ -1503,6 +1503,35 @@ export default function CatCopyPage() {
     setShowScoreboard(false);
   }, [gameId]);
 
+  const handleResetGame = useCallback(async () => {
+    if (!GLOBAL_GAME_ID) return;
+    try {
+      console.log("Resetting global cat game...");
+      await supabase.from('cat_votes').delete().eq('game_id', GLOBAL_GAME_ID);
+      await supabase.from('cat_players').delete().eq('game_id', GLOBAL_GAME_ID);
+      await supabase
+        .from('cat_game')
+        .update({
+          status: 'intro',
+          round: 0,
+          current_player: null,
+          current_cat: null,
+          used_cats: [],
+          used_players: [],
+        })
+        .eq('id', GLOBAL_GAME_ID);
+
+      localStorage.removeItem('cat_session');
+      setGameState({ ...INITIAL_STATE });
+      setVotesList([]);
+      setJoinedPlayers([]);
+      setShowScoreboard(false);
+      console.log("Cat game reset successfully!");
+    } catch (err) {
+      console.error("Error resetting cat game:", err);
+    }
+  }, []);
+
   // Get voters (all players except current player)
   const currentVoters = useMemo(() => {
     return activePlayers.filter((p) => p.name !== gameState.currentPlayer);
@@ -1604,15 +1633,34 @@ export default function CatCopyPage() {
     return (
       <PageWrapper className="bg-[var(--color-parchment)]">
         <div className="page-container cat-copy-page">
-          <button
-            onClick={() => {
-              localStorage.removeItem('cat_session');
-              navigate('/games');
-            }}
-            className="game-back-link"
-          >
-            ← Back to Games
-          </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '24px' }}>
+            <button
+              onClick={() => {
+                localStorage.removeItem('cat_session');
+                navigate('/games');
+              }}
+              className="game-back-link"
+              style={{ margin: 0 }}
+            >
+              ← Back to Games
+            </button>
+            {guestName?.toLowerCase() === 'prathamesh' && (
+              <Button
+                variant="ghost"
+                onClick={handleResetGame}
+                style={{
+                  color: 'var(--color-red)',
+                  borderColor: 'var(--color-red)',
+                  padding: '4px 12px',
+                  fontSize: '11px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                ⚠️ Reset Game
+              </Button>
+            )}
+          </div>
 
           <div className="cat-intro">
             <motion.div
@@ -1666,22 +1714,41 @@ export default function CatCopyPage() {
     return (
       <PageWrapper className="bg-[var(--color-parchment)]">
         <div className="page-container cat-copy-page">
-          <button
-            onClick={async () => {
-              if (gameId) {
-                await supabase
-                  .from('cat_players')
-                  .delete()
-                  .eq('game_id', gameId)
-                  .eq('player_name', guestName || '');
-              }
-              localStorage.removeItem('cat_session');
-              navigate('/games');
-            }}
-            className="game-back-link"
-          >
-            ← Leave Lobby
-          </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '24px' }}>
+            <button
+              onClick={async () => {
+                if (gameId) {
+                  await supabase
+                    .from('cat_players')
+                    .delete()
+                    .eq('game_id', gameId)
+                    .eq('player_name', guestName || '');
+                }
+                localStorage.removeItem('cat_session');
+                navigate('/games');
+              }}
+              className="game-back-link"
+              style={{ margin: 0 }}
+            >
+              ← Leave Lobby
+            </button>
+            {guestName?.toLowerCase() === 'prathamesh' && (
+              <Button
+                variant="ghost"
+                onClick={handleResetGame}
+                style={{
+                  color: 'var(--color-red)',
+                  borderColor: 'var(--color-red)',
+                  padding: '4px 12px',
+                  fontSize: '11px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                ⚠️ Reset Game
+              </Button>
+            )}
+          </div>
 
           <div className="text-centered">
             <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
@@ -1740,6 +1807,34 @@ export default function CatCopyPage() {
     return (
       <PageWrapper className="bg-[var(--color-parchment)]">
         <div className="page-container cat-copy-page">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '24px' }}>
+            <button
+              onClick={() => {
+                localStorage.removeItem('cat_session');
+                navigate('/games');
+              }}
+              className="game-back-link"
+              style={{ margin: 0 }}
+            >
+              ← Back to Games
+            </button>
+            {guestName?.toLowerCase() === 'prathamesh' && (
+              <Button
+                variant="ghost"
+                onClick={handleResetGame}
+                style={{
+                  color: 'var(--color-red)',
+                  borderColor: 'var(--color-red)',
+                  padding: '4px 12px',
+                  fontSize: '11px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                ⚠️ Reset Game
+              </Button>
+            )}
+          </div>
           <ScoreboardScreen
             votes={allVotesForGame}
             onPlayAgain={handlePlayAgain}
@@ -1765,16 +1860,34 @@ export default function CatCopyPage() {
   return (
     <PageWrapper className="bg-[var(--color-parchment)]">
       <div className="page-container cat-copy-page">
-        {/* Back button */}
-        <button
-          onClick={() => {
-            localStorage.removeItem('cat_session');
-            navigate('/games');
-          }}
-          className="game-back-link"
-        >
-          ← Back to Games
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '24px' }}>
+          <button
+            onClick={() => {
+              localStorage.removeItem('cat_session');
+              navigate('/games');
+            }}
+            className="game-back-link"
+            style={{ margin: 0 }}
+          >
+            ← Back to Games
+          </button>
+          {guestName?.toLowerCase() === 'prathamesh' && (
+            <Button
+              variant="ghost"
+              onClick={handleResetGame}
+              style={{
+                color: 'var(--color-red)',
+                borderColor: 'var(--color-red)',
+                padding: '4px 12px',
+                fontSize: '11px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em'
+              }}
+            >
+              ⚠️ Reset Game
+            </Button>
+          )}
+        </div>
 
         <AnimatePresence mode="wait">
           {gameState.phase === 'roulette' && (
