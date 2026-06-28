@@ -119,8 +119,8 @@ export function MediaGallery({ photos }: { photos: Photo[] }) {
   }
   return (
     <div
-      className="grid gap-4"
-      style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}
+      className="grid gap-4 justify-center"
+      style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 220px))' }}
     >
       {photos.map((photo) => {
         const guestInfo = getGuestInfo(photo.guest_name);

@@ -22,9 +22,11 @@ import latestImg from '../assets/latest.png';
 /* ─── Section Divider ─── */
 function SectionDivider({ number, label }: { number: string; label: string }) {
   return (
-    <div className="text-center py-4">
-      <div className="w-[40%] h-px bg-[var(--color-dust)]/20 mx-auto mb-6" />
-      <span className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-dust)]">
+    <div className="flex flex-col items-center justify-center py-4 w-full">
+      <div
+        className="h-px bg-[var(--color-dust)]/20 mb-6 w-[40%]"
+      />
+      <span className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-dust)] text-center">
         {number} — {label}
       </span>
     </div>
@@ -216,15 +218,15 @@ export default function CapsulePage() {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-24"
+            className="text-center mb-16 md:mb-24 px-4"
           >
             <span className="block text-xs uppercase tracking-[0.2em] text-[var(--color-dust)] mb-2">
               The capsule
             </span>
-            <h1 className="text-4xl md:text-5xl font-light leading-[1.1] text-[var(--color-ink)] font-[family-name:var(--font-display)]">
+            <h1 className="text-3xl md:text-5xl font-light leading-[1.1] text-[var(--color-ink)] font-[family-name:var(--font-display)]">
               {totalMemories} memories, waiting no longer
             </h1>
-            <p className="text-sm text-[var(--color-dust)] max-w-sm mx-auto mt-4">
+            <p className="text-sm text-[var(--color-dust)] text-center mt-4 w-full">
               your digital memory capsule is officially open.
             </p>
           </motion.div>
@@ -251,7 +253,7 @@ export default function CapsulePage() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="mt-24"
+            className="mt-16 md:mt-24"
           >
             <SectionDivider number="02" label="Notes" />
             <div className="text-center mb-8">
@@ -260,7 +262,7 @@ export default function CapsulePage() {
               </h2>
             </div>
             <div
-              className="grid gap-6"
+              className="grid gap-6 justify-center"
               style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}
             >
               {messages.map((msg) => (
@@ -289,7 +291,7 @@ export default function CapsulePage() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="mt-24"
+            className="mt-16 md:mt-24"
           >
             <SectionDivider number="03" label="Photos & Videos" />
             <div className="text-center mb-8">
@@ -305,7 +307,7 @@ export default function CapsulePage() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
-            className="mt-24"
+            className="mt-16 md:mt-24"
           >
             <SectionDivider number="04" label="Guestbook" />
             <div className="text-center mb-8">
@@ -322,7 +324,7 @@ export default function CapsulePage() {
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.0 }}
-              className="mt-24"
+              className="mt-16 md:mt-24"
             >
               <SectionDivider number="05" label="Future Letters" />
               <div className="text-center mb-8">
@@ -332,7 +334,7 @@ export default function CapsulePage() {
               </div>
               {isFutureLettersUnlocked() || localStorage.getItem('mode') === 'admin' ? (
                 <div
-                  className="grid gap-6"
+                  className="grid gap-6 justify-center"
                   style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}
                 >
                   {futureLetters.map((msg) => (
